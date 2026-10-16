@@ -1,0 +1,17 @@
+# Python 3.11
+
+# Direkt gewaehlt
+feedparser==6.0.14
+num2words==0.5.14
+piper-tts==1.8.0
+PyYAML==6.0.3
+
+# Abhaengigkeiten, kommen ueber die Pakete oben
+docopt==0.6.2
+feedparser-sgmllib==2.1.0
+flatbuffers==25.12.19
+numpy==2.4.6
+onnxruntime==1.31.0
+packaging==26.3
+pathvalidate==3.3.1
+protobuf==7.36.2

@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+
+# Grosse oder erzeugte Dateien
+voices/
+data/runs/
+logs/
+
+# Geheimnisse
+.env
+
+
+# Doku: nur doku_public ins Repo
+A_documentation/*
+!A_documentation/doku_public/
+
