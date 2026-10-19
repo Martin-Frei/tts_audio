@@ -99,6 +99,35 @@ def save_raw(path, run_id, items, status, reason=None):
         json.dump(data, file, ensure_ascii=False, indent=2)
 
 
+def fetch(feeds_path, output_path, run_id):
+    """Run the fetch stage: download all feeds and write the raw file.
+
+    Returns a tuple (status, output_path) for run.py.
+    """
+    feeds = load_feed_list(feeds_path)
+    items = []
+    number = 1
+
+    for source, url in feeds.items():                
+        result = fetch_feed(url)
+        if result is None:
+            continue                                     # ausgefallen: Feed überspringen
+
+        for entry in result.entries:
+            item = parse_entry(entry, source)
+            item = {"id": f"m{number:03d}", **item}      # Kennung vorne einfügen
+            items.append(item)   
+            number += 1
+
+    if len(items) == 0:                             
+        status, reason = "abort", "no feed reachable"
+    else:
+        status, reason = "ok", None
+
+    save_raw(output_path, run_id, items, status, reason)
+    logger.info("fetch: %d items, status %s", len(items), status)
+    return status, output_path                          
+
 
 if __name__ == "__main__":
     from pathlib import Path
@@ -108,11 +137,5 @@ if __name__ == "__main__":
     test_dir = Path("data/runs/test")
     test_dir.mkdir(parents=True, exist_ok=True)
 
-    feeds = load_feed_list("./config/feeds.yaml")
-    result = fetch_feed(feeds["tagesschau"])
-    if result is None:
-        print("tagesschau failed")
-    else:
-        item = parse_entry(result.entries[0], source="tagesschau")
-        save_raw(test_dir / "test_raw.json", "test", [item], "ok")
-        print("written:", test_dir / "test_raw.json")
+    status, path = fetch("config/feeds.yaml", test_dir / "test_raw.json", "test")
+    print(status, path)
