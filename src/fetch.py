@@ -13,6 +13,7 @@ Functions:
     fetch_feed(url) -> FeedParserDict | None
     to_utc(parsed_time) -> str | None
     parse_entry(entry, source) -> dict
+    save_raw(path, run_id, items, status, reason=None) -> None
 
 Dependencies:
     pyyaml, feedparser
@@ -23,6 +24,8 @@ Test:
 
 import logging
 import time
+import json
+from datetime import datetime, timezone
 
 import feedparser
 import yaml
@@ -67,8 +70,8 @@ def to_utc(parsed_time):
     True
     """
     if parsed_time is None:
-        return None                                   # Lücke 1
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", parsed_time)  # Lücke 2: Format für 2026-10-19T05:31:49Z
+        return None
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", parsed_time) 
 
 
 def parse_entry(entry, source):
@@ -82,15 +85,34 @@ def parse_entry(entry, source):
     }
 
 
+def save_raw(path, run_id, items, status, reason=None):
+    """Write the raw stage file with metadata and all items."""
+    data = {
+        "run_id": run_id, 
+        "stage": "fetch",  
+        "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "status": status,
+        "reason": reason,
+        "items": items, 
+    }
+    with open(path, "w", encoding="utf-8") as file: 
+        json.dump(data, file, ensure_ascii=False, indent=2)
+
+
+
 if __name__ == "__main__":
+    from pathlib import Path
+
     logging.basicConfig(level=logging.INFO)
+
+    test_dir = Path("data/runs/test")
+    test_dir.mkdir(parents=True, exist_ok=True)
 
     feeds = load_feed_list("./config/feeds.yaml")
     result = fetch_feed(feeds["tagesschau"])
-
     if result is None:
-        print("tagesschau failed, nothing to parse")
+        print("tagesschau failed")
     else:
         item = parse_entry(result.entries[0], source="tagesschau")
-        print(item)
-        print(result.entries[0].get("published"))
+        save_raw(test_dir / "test_raw.json", "test", [item], "ok")
+        print("written:", test_dir / "test_raw.json")
