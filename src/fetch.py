@@ -26,7 +26,7 @@ import logging
 import time
 import json
 from datetime import datetime, timezone
-
+import requests
 import feedparser
 import yaml
 
@@ -40,18 +40,24 @@ def load_feed_list(path):
     return data["feeds"]
 
 
-def fetch_feed(url):
+def fetch_feed(url, timeout=10):
     """Download one RSS feed and return the parsed result, or None if it failed.
 
-    A feed counts as failed when it delivers no entries, whatever the reason
-    (unknown host, HTTP error, error page instead of XML).
+    A feed counts as failed when the download fails or times out,
+    or when it delivers no entries.
     A feed with entries but a format warning (bozo) is still used.
     """
-    result = feedparser.parse(url)
+    try:
+        response = requests.get(url, timeout=timeout)    
+        response.raise_for_status()
+    except requests.RequestException as error:
+        logger.warning("Feed failed: %s (%s)", url, error)
+        return None 
+
+    result = feedparser.parse(response.content)
 
     if len(result.entries) == 0:
-        reason = result.get("bozo_exception") or f"HTTP status {result.get('status')}"
-        logger.warning("Feed failed: %s (%s)", url, reason)
+        logger.warning("Feed failed: %s (no entries, %s)", url, result.get("bozo_exception"))
         return None
 
     if result.bozo:
@@ -139,3 +145,5 @@ if __name__ == "__main__":
 
     status, path = fetch("config/feeds.yaml", test_dir / "test_raw.json", "test")
     print(status, path)
+    print("timeout:", fetch_feed(feeds_url_tagesschau := "https://www.tagesschau.de/infoservices/alle-meldungen-100~rss2.xml", timeout=0.001))
+    
