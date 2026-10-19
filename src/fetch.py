@@ -145,5 +145,3 @@ if __name__ == "__main__":
 
     status, path = fetch("config/feeds.yaml", test_dir / "test_raw.json", "test")
     print(status, path)
-    print("timeout:", fetch_feed(feeds_url_tagesschau := "https://www.tagesschau.de/infoservices/alle-meldungen-100~rss2.xml", timeout=0.001))
-    
