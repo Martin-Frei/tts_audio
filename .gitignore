@@ -6,6 +6,7 @@ __pycache__/
 voices/
 data/runs/
 logs/
+.pytest_cache
 
 # Geheimnisse
 .env
@@ -14,4 +15,3 @@ logs/
 # Doku: nur doku_public ins Repo
 A_documentation/*
 !A_documentation/doku_public/
-

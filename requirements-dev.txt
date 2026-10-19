@@ -1,0 +1,11 @@
+# Nur fuer die Entwicklung, nicht im Container
+-r requirements.txt
+
+# Direkt gewaehlt
+pytest==9.1.1
+
+# Abhaengigkeiten, kommen ueber pytest
+colorama==0.4.6
+iniconfig==2.3.1
+pluggy==1.7.0
+Pygments==2.21.0
