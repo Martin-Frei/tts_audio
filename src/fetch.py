@@ -8,6 +8,8 @@ Workflow:
 Functions:
     load_feed_list(path) -> dict
     fetch_feed(url) -> FeedParserDict | None
+    to_utc(parsed_time) -> str | None
+    parse_entry(entry, source) -> dict
 
 Dependencies:
     pyyaml, feedparser
@@ -52,13 +54,30 @@ def fetch_feed(url):
     return result
 
 
+def to_utc(parsed_time):
+    """Convert a feedparser time to an ISO 8601 UTC string, or None if missing."""
+    return None  # placeholder, we build this next
+
+
+def parse_entry(entry, source):
+    """Extract the fields we keep from one feed entry and return them as a dictionary."""
+    return {
+        "source": source,                                      
+        "title": entry.get("title"),                   
+        "teaser": entry.get("summary"),                
+        "link": entry.get("link"), 
+        "published": to_utc(entry.get("published_parsed")),
+    }
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     feeds = load_feed_list("./config/feeds.yaml")
-    for name, url in feeds.items():
-        result = fetch_feed(url)
-        count = len(result.entries) if result else 0
-        print(f"{name}: {count} entries")
+    result = fetch_feed(feeds["tagesschau"])
 
-    print("Test with unknown host:", fetch_feed("https://www.gibtesnicht-xyz.de/feed"))
+    if result is None:
+        print("tagesschau failed, nothing to parse")
+    else:
+        item = parse_entry(result.entries[0], source="tagesschau")
+        print(item)
