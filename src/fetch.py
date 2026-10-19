@@ -1,3 +1,6 @@
+# src/fetch.py
+
+
 """Fetch stage: load the feed list and download RSS feeds.
 
 Workflow:
@@ -19,6 +22,7 @@ Test:
 """
 
 import logging
+import time
 
 import feedparser
 import yaml
@@ -55,8 +59,16 @@ def fetch_feed(url):
 
 
 def to_utc(parsed_time):
-    """Convert a feedparser time to an ISO 8601 UTC string, or None if missing."""
-    return None  # placeholder, we build this next
+    """Convert a feedparser time to an ISO 8601 UTC string, or None if missing.
+
+    >>> to_utc(time.strptime("2026-10-19 05:31:49", "%Y-%m-%d %H:%M:%S"))
+    '2026-10-19T05:31:49Z'
+    >>> to_utc(None) is None
+    True
+    """
+    if parsed_time is None:
+        return None                                   # Lücke 1
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", parsed_time)  # Lücke 2: Format für 2026-10-19T05:31:49Z
 
 
 def parse_entry(entry, source):
@@ -81,3 +93,4 @@ if __name__ == "__main__":
     else:
         item = parse_entry(result.entries[0], source="tagesschau")
         print(item)
+        print(result.entries[0].get("published"))
