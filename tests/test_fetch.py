@@ -4,8 +4,40 @@
 
 import time
 import json
+import requests
 
-from fetch import load_feed_list, parse_entry, save_raw
+from fetch import fetch_feed, load_feed_list, parse_entry, save_raw
+
+
+SAMPLE_FEED = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Testfeed</title>
+    <item>
+      <title>Bäckerei öffnet neue Filiale</title>
+      <description>Nach drei Jahren Bauzeit.</description>
+      <link>https://example.org/1</link>
+      <pubDate>Mon, 19 Oct 2026 07:31:49 +0200</pubDate>
+    </item>
+    <item>
+      <title>Stadtfest am Wochenende</title>
+      <description>Mit Musik und Markt.</description>
+      <link>https://example.org/2</link>
+      <pubDate>Mon, 19 Oct 2026 08:00:00 +0200</pubDate>
+    </item>
+  </channel>
+</rss>
+"""
+
+
+class FakeResponse:
+    """Stands in for a requests response in tests."""
+
+    def __init__(self, content):
+        self.content = content
+
+    def raise_for_status(self):
+        pass
 
 
 def test_parse_entry_complete():
@@ -81,3 +113,25 @@ def test_load_feed_list_returns_feeds(tmp_path):
         "feed_a": "https://example.org/a.xml",
         "feed_b": "https://example.org/b.xml",
         }
+
+
+def test_fetch_feed_returns_entries(monkeypatch):
+    def fake_get(url, timeout):
+        return FakeResponse(SAMPLE_FEED.encode("utf-8"))
+
+    monkeypatch.setattr("fetch.requests.get", fake_get)
+
+    result = fetch_feed("https://example.org/feed.xml")
+
+    assert result is not None
+    assert len(result.entries) == 2                  # Lücke 1 weil 2 Einträge
+    assert result.entries[0].title == "Bäckerei öffnet neue Filiale"              # Lücke 2 <title>Bäckerei öffnet neue Filiale</title>
+
+
+def test_fetch_feed_returns_none_on_error(monkeypatch):
+    def fake_get(url, timeout):
+        raise requests.ConnectionError("no network")
+
+    monkeypatch.setattr("fetch.requests.get", fake_get)
+
+    assert fetch_feed("https://example.org/feed.xml") is None   # Lücke 3 gibt es ncht also None 
