@@ -5,7 +5,7 @@
 import time
 import json
 
-from fetch import parse_entry, save_raw
+from fetch import load_feed_list, parse_entry, save_raw
 
 
 def test_parse_entry_complete():
@@ -64,3 +64,20 @@ def test_save_raw_writes_file(tmp_path):
 
     text = path.read_text(encoding="utf-8")
     assert "Bäckerei" in text 
+
+
+def test_load_feed_list_returns_feeds(tmp_path):
+    path = tmp_path / "feeds.yaml"
+    path.write_text(
+        "feeds:\n"
+        "  feed_a: https://example.org/a.xml\n"
+        "  feed_b: https://example.org/b.xml\n",
+        encoding="utf-8",
+    )
+
+    feeds = load_feed_list(path)
+
+    assert feeds == {
+        "feed_a": "https://example.org/a.xml",
+        "feed_b": "https://example.org/b.xml",
+        }
