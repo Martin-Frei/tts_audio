@@ -124,8 +124,8 @@ def test_fetch_feed_returns_entries(monkeypatch):
     result = fetch_feed("https://example.org/feed.xml")
 
     assert result is not None
-    assert len(result.entries) == 2                  # Lücke 1 weil 2 Einträge
-    assert result.entries[0].title == "Bäckerei öffnet neue Filiale"              # Lücke 2 <title>Bäckerei öffnet neue Filiale</title>
+    assert len(result.entries) == 2  
+    assert result.entries[0].title == "Bäckerei öffnet neue Filiale"    
 
 
 def test_fetch_feed_returns_none_on_error(monkeypatch):
@@ -134,7 +134,7 @@ def test_fetch_feed_returns_none_on_error(monkeypatch):
 
     monkeypatch.setattr("fetch.requests.get", fake_get)
 
-    assert fetch_feed("https://example.org/feed.xml") is None   # Lücke 3 gibt es ncht also None 
+    assert fetch_feed("https://example.org/feed.xml") is None 
 
 
 def write_test_feeds(path):
@@ -161,9 +161,9 @@ def test_fetch_all_feeds_work(tmp_path, monkeypatch):
     data = json.loads(path.read_text(encoding="utf-8"))
 
     assert status == "ok"
-    assert len(data["items"]) == 4                # es gibt 2 url mit je 2 news von oben 
-    assert data["items"][-1]["id"] ==  "m004"          # die letzte id ist die -1 also m004
-    assert data["items"][2]["source"] == "feed_b"        # 1 und 2 =feed_a  3 udn 4 = feed_b  [2] === 3
+    assert len(data["items"]) == 4 
+    assert data["items"][-1]["id"] ==  "m004"   
+    assert data["items"][2]["source"] == "feed_b" 
 
 
 def test_fetch_one_feed_fails(tmp_path, monkeypatch):
@@ -181,8 +181,8 @@ def test_fetch_one_feed_fails(tmp_path, monkeypatch):
     assert path.exists()
     data = json.loads(path.read_text(encoding="utf-8"))
 
-    assert status == "ok"                            # mind 1 feed ohen Probleme durvchgelaufen 
-    assert len(data["items"]) == 2                # 2 einträge sind ok die anderen werde nicht gespeichert 
+    assert status == "ok"  
+    assert len(data["items"]) == 2 
 
 
 def test_fetch_all_feeds_fail(tmp_path, monkeypatch):
@@ -198,5 +198,5 @@ def test_fetch_all_feeds_fail(tmp_path, monkeypatch):
     assert path.exists()
     data = json.loads(path.read_text(encoding="utf-8"))
     
-    assert status == "abort"                            # keien feed lifert daten
-    assert data["items"] == []                   # leere Liste [] len(data["items"]) == 20     
+    assert status == "abort"    
+    assert data["items"] == []     

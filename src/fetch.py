@@ -1,31 +1,43 @@
 # src/fetch.py
 
 
-"""Fetch stage: load the feed list and download RSS feeds.
+"""Fetch stage: download all RSS feeds and write the raw file.
 
-Workflow:
-    1. load_feed_list() reads config/feeds.yaml
-    2. fetch_feed() downloads one feed per URL
-    (parse_entry, to_utc, save_raw and fetch() follow)
+Workflow (fetch):
+    1. Receive feeds_path, output_path and run_id from run.py.
+    2. Load the feed list (name -> URL) with load_feed_list().
+    3. For each feed: download it with fetch_feed().
+       If it returns None (unreachable, timeout, no entries), skip it
+       and continue with the next feed.
+    4. For each entry of a working feed: extract the fields with
+       parse_entry() (which calls to_utc() for the date), put a running
+       id in front (m001, m002, ... across all feeds) and append the
+       item to the list.
+    5. Set the status: "abort" with a reason if no item was collected,
+       otherwise "ok".
+    6. Write the raw file with save_raw() and log the item count.
+    7. Return (status, output_path) to run.py.
 
 Functions:
     load_feed_list(path) -> dict
-    fetch_feed(url) -> FeedParserDict | None
+    fetch_feed(url, timeout=10) -> FeedParserDict | None
     to_utc(parsed_time) -> str | None
     parse_entry(entry, source) -> dict
     save_raw(path, run_id, items, status, reason=None) -> None
+    fetch(feeds_path, output_path, run_id) -> tuple (status, output_path)
 
 Dependencies:
-    pyyaml, feedparser
+    feedparser, pyyaml, requests
 
 Test:
-    python src/fetch.py
+    python -m pytest -v    # all tests and doctests
 """
 
-import logging
+import logging 
 import time
 import json
 from datetime import datetime, timezone
+
 import requests
 import feedparser
 import yaml
