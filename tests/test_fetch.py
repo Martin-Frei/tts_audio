@@ -6,7 +6,7 @@ import time
 import json
 import requests
 
-from fetch import fetch_feed, load_feed_list, parse_entry, save_raw
+from fetch import fetch, fetch_feed, load_feed_list, parse_entry, save_raw
 
 
 SAMPLE_FEED = """<?xml version="1.0" encoding="UTF-8"?>
@@ -135,3 +135,68 @@ def test_fetch_feed_returns_none_on_error(monkeypatch):
     monkeypatch.setattr("fetch.requests.get", fake_get)
 
     assert fetch_feed("https://example.org/feed.xml") is None   # Lücke 3 gibt es ncht also None 
+
+
+def write_test_feeds(path):
+    """Write a feed list with two invented feeds."""
+    path.write_text(
+        "feeds:\n"
+        "  feed_a: https://example.org/a.xml\n"
+        "  feed_b: https://example.org/b.xml\n",
+        encoding="utf-8",
+    )
+
+
+def test_fetch_all_feeds_work(tmp_path, monkeypatch):
+    def fake_get(url, timeout):
+        return FakeResponse(SAMPLE_FEED.encode("utf-8"))
+
+    monkeypatch.setattr("fetch.requests.get", fake_get)
+    feeds_path = tmp_path / "feeds.yaml"
+    output_path = tmp_path / "raw.json"
+    write_test_feeds(feeds_path)
+
+    status, path = fetch(feeds_path, output_path, "test")
+    assert path.exists()
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+    assert status == "ok"
+    assert len(data["items"]) == 4                # es gibt 2 url mit je 2 news von oben 
+    assert data["items"][-1]["id"] ==  "m004"          # die letzte id ist die -1 also m004
+    assert data["items"][2]["source"] == "feed_b"        # 1 und 2 =feed_a  3 udn 4 = feed_b  [2] === 3
+
+
+def test_fetch_one_feed_fails(tmp_path, monkeypatch):
+    def fake_get(url, timeout):
+        if "b.xml" in url:
+            raise requests.ConnectionError("feed_b down")
+        return FakeResponse(SAMPLE_FEED.encode("utf-8"))
+
+    monkeypatch.setattr("fetch.requests.get", fake_get)
+    feeds_path = tmp_path / "feeds.yaml"
+    output_path = tmp_path / "raw.json"
+    write_test_feeds(feeds_path)
+
+    status, path = fetch(feeds_path, output_path, "test")
+    assert path.exists()
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+    assert status == "ok"                            # mind 1 feed ohen Probleme durvchgelaufen 
+    assert len(data["items"]) == 2                # 2 einträge sind ok die anderen werde nicht gespeichert 
+
+
+def test_fetch_all_feeds_fail(tmp_path, monkeypatch):
+    def fake_get(url, timeout):
+        raise requests.ConnectionError("no network")
+
+    monkeypatch.setattr("fetch.requests.get", fake_get)
+    feeds_path = tmp_path / "feeds.yaml"
+    output_path = tmp_path / "raw.json"
+    write_test_feeds(feeds_path)
+
+    status, path = fetch(feeds_path, output_path, "test")
+    assert path.exists()
+    data = json.loads(path.read_text(encoding="utf-8"))
+    
+    assert status == "abort"                            # keien feed lifert daten
+    assert data["items"] == []                   # leere Liste [] len(data["items"]) == 20     
