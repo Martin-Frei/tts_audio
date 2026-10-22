@@ -4,8 +4,16 @@
     python -m pytest -v
 """
 
-
+import re
 from decimal import Decimal, ROUND_HALF_UP
+from num2words import num2words
+
+UNIT_WORDS = {
+    "%": "Prozent",
+    "€": "Euro",
+    "km": "Kilometer",
+    "kg": "Kilogramm"
+    }
 
 
 def round_half_up(value, round_to):
@@ -62,3 +70,20 @@ def to_decimal(text):
     without_dots = text.replace(".", "")
     with_point = without_dots.replace(",", ".")
     return Decimal(with_point)
+
+
+def spell_number(value, unit, word=None):
+    """Write a number with its unit as spoken German.
+
+    word is "knapp", "gut" or None (from qualifier()).
+
+    >>> spell_number(3, "%", "knapp")
+    'knapp drei Prozent'
+    >>> spell_number(Decimal("0.4"), "%")
+    'null Komma vier Prozent'
+    """
+    spoken = num2words(value, lang="de")
+    text = spoken + " " + UNIT_WORDS[unit]
+    if word is not None:
+        text = word + " " + text
+    return text
