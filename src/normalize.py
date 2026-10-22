@@ -159,3 +159,31 @@ def spell_dates(text):
     'Nichts am 16.13. passiert.'
     """
     return DATE.sub(spell_date_match, text)
+
+# reguläre Ausdrucksmuster für Uhrzeit studne imme rudn minuten optional 
+TIME = re.compile(r"(?<![\d.:])(\d{1,2})(?:[.:](\d{2}))?\s+Uhr\b")
+#                                ^^^^^^^^^^            ^^^^^^
+#                                Group 1               Group 2   
+
+
+def spell_time_match(match):
+    """Replace one found time like 11:51 Uhr (helper for re.sub)."""
+    hour = int(match.group(1))
+    minutes = match.group(2)
+    spoken = num2words(hour, lang="de") + " Uhr"
+    if minutes is not None and int(minutes) != 0:
+        spoken = spoken + " " + num2words(int(minutes), lang="de")
+    return spoken
+
+
+def spell_times(text):
+    """Write out all times like 11:51 Uhr in a text.
+
+    >>> spell_times("Beginn um 11:51 Uhr.")
+    'Beginn um elf Uhr einundfünfzig.'
+    >>> spell_times("Treffen um 12 Uhr.")
+    'Treffen um zwölf Uhr.'
+    >>> spell_times("Start um 0.30 Uhr.")
+    'Start um null Uhr dreißig.'
+    """
+    return TIME.sub(spell_time_match, text)
