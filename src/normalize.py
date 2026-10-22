@@ -103,7 +103,28 @@ def spell_numbers(text):
 
     >>> spell_numbers("Der Dax steht bei 19.450 Punkten.")
     'Der Dax steht bei neunzehntausendvierhundertfünfzig Punkten.'
-    >>> spell_numbers("Kein Zahl hier.")
-    'Kein Zahl hier.'
+    >>> spell_numbers("Keine Zahl hier.")
+    'Keine Zahl hier.'
     """
     return NUMBER.sub(spell_plain_number, text)
+
+
+MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+          "August", "September", "Oktober", "November", "Dezember"]
+
+
+def spell_date(day, month, previous_word):
+    """Write a day and month as spoken German, e.g. 'sechzehnten Oktober'.
+
+    previous_word is the word in front of the date. After "der" the
+    ordinal ends in -e, otherwise in -en.
+
+    >>> spell_date(16, 10, "am")
+    'sechzehnten Oktober'
+    >>> spell_date(1, 5, "Der")
+    'erste Mai'
+    """
+    ordinal = num2words(day, lang="de", to="ordinal")
+    if previous_word.lower() != "der":
+        ordinal = ordinal + "n"
+    return ordinal + " " + MONTHS[month - 1]
