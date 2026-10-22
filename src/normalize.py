@@ -128,3 +128,34 @@ def spell_date(day, month, previous_word):
     if previous_word.lower() != "der":
         ordinal = ordinal + "n"
     return ordinal + " " + MONTHS[month - 1]
+
+
+# Reguläres Ausdrucksmuster für ein Datum wie "16.10." mit optionalem vorherigen Wort
+DATE = re.compile(r"(?:(\w+)\s+)?(?<![\d.])(\d{1,2})\.(\d{1,2})\.(?!\d)")
+#                      ^^^^^               ^^^^^^^^^   ^^^^^^^^^
+#                       Group 1             Group 2    Group 3
+
+def spell_date_match(match):
+    """Replace one found date, keep the word in front (helper for re.sub)."""
+    word = match.group(1) or ""
+    day = int(match.group(2))
+    month = int(match.group(3))
+    if not (1 <= month <= 12 and 1 <= day <= 31):
+        return match.group()
+    spoken = spell_date(day, month, word)
+    if word:
+        return word + " " + spoken
+    return spoken
+
+
+def spell_dates(text):
+    """Write out all dates like 16.10. in a text.
+
+    >>> spell_dates("Am 16.10. stieg der Dax.")
+    'Am sechzehnten Oktober stieg der Dax.'
+    >>> spell_dates("Gesperrt wurde 167.0.0.1.")
+    'Gesperrt wurde 167.0.0.1.'
+    >>> spell_dates("Nichts am 16.13. passiert.")
+    'Nichts am 16.13. passiert.'
+    """
+    return DATE.sub(spell_date_match, text)
