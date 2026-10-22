@@ -87,3 +87,23 @@ def spell_number(value, unit, word=None):
     if word is not None:
         text = word + " " + text
     return text
+
+
+# Digits, optional thousands groups (.ddd), optional decimals (,d...)
+NUMBER = re.compile(r"\d+(?:\.\d{3})*(?:,\d+)?")
+
+
+def spell_plain_number(match):
+    """Return one found number as spoken German (helper for re.sub)."""
+    return num2words(to_decimal(match.group()), lang="de")
+
+
+def spell_numbers(text):
+    """Write out all remaining numbers in a text, without rounding.
+
+    >>> spell_numbers("Der Dax steht bei 19.450 Punkten.")
+    'Der Dax steht bei neunzehntausendvierhundertfünfzig Punkten.'
+    >>> spell_numbers("Kein Zahl hier.")
+    'Kein Zahl hier.'
+    """
+    return NUMBER.sub(spell_plain_number, text)
