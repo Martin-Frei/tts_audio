@@ -170,7 +170,11 @@ def spell_time_match(match):
     """Replace one found time like 11:51 Uhr (helper for re.sub)."""
     hour = int(match.group(1))
     minutes = match.group(2)
-    spoken = num2words(hour, lang="de") + " Uhr"
+    if hour == 1:
+        hour_word = "ein"
+    else:
+        hour_word = num2words(hour, lang="de")
+    spoken = hour_word + " Uhr"
     if minutes is not None and int(minutes) != 0:
         spoken = spoken + " " + num2words(int(minutes), lang="de")
     return spoken
@@ -185,5 +189,7 @@ def spell_times(text):
     'Treffen um zwölf Uhr.'
     >>> spell_times("Start um 0.30 Uhr.")
     'Start um null Uhr dreißig.'
+    >>> spell_times("Start um 1.30 Uhr")
+    'Start um ein Uhr dreißig'
     """
     return TIME.sub(spell_time_match, text)
