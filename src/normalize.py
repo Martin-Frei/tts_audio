@@ -45,3 +45,20 @@ def qualifier(original, rounded):
     if difference < 0:
         return "knapp"
     return None
+
+
+def to_decimal(text):
+    """Convert a German number text to a Decimal.
+
+    Dots are thousands separators, the comma is the decimal mark.
+
+    >>> to_decimal("2,8")
+    Decimal('2.8')
+    >>> to_decimal("19.450")
+    Decimal('19450')
+    >>> to_decimal("1.250,5")
+    Decimal('1250.5')
+    """
+    without_dots = text.replace(".", "")
+    with_point = without_dots.replace(",", ".")
+    return Decimal(with_point)
