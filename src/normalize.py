@@ -18,6 +18,16 @@ UNIT_WORDS = {
     }
 
 
+MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+          "August", "September", "Oktober", "November", "Dezember"]
+
+
+SYMBOL_WORDS = {
+    "&": "und",
+    "§": "Paragraf",
+}
+
+
 def round_half_up(value, round_to):
     """Round a Decimal commercially (half up) and return an int.
 
@@ -109,10 +119,6 @@ def spell_numbers(text):
     'Keine Zahl hier.'
     """
     return NUMBER.sub(spell_plain_number, text)
-
-
-MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
-          "August", "September", "Oktober", "November", "Dezember"]
 
 
 def spell_date(day, month, previous_word):
@@ -272,12 +278,6 @@ def spell_units(text, whitelist):
     return UNIT_NUMBER.sub(replace, text)
 
 
-SYMBOL_WORDS = {
-    "&": "und",
-    "§": "Paragraf",
-}
-
-
 def spell_symbols(text):
     """Replace symbols like & with spoken words.
 
@@ -309,3 +309,24 @@ def apply_lexicon(text, lexicon):
 # 1. (?<!\w)   : Stellt sicher, dass vor dem Suchbegriff kein weiteres Wortzeichen steht (linker Wort-Grenzschutz).
 # 2. re.escape : Maskiert eventuelle Sonderzeichen im Suchbegriff, damit sie sicher als Text interpretiert werden.
 # 3. (?!\w)    : Stellt sicher, dass nach dem Suchbegriff kein weiteres Wortzeichen folgt (rechter Wort-Grenzschutz).
+
+
+def normalize_text(text, whitelist, lexicon):
+    """Make one text speakable. The order of the passes matters.
+
+    >>> wl = [{"unit": "%", "keywords": ["Marktanteil"], "round_to": 0, "min_abs": 1}]
+    >>> lex = {"DAX": "Dax"}
+    >>> normalize_text("Am 16.10. stieg der Marktanteil auf 2,8 %.", wl, lex)
+    'Am sechzehnten Oktober stieg der Marktanteil auf knapp drei Prozent.'
+    >>> normalize_text(None, wl, lex) is None
+    True
+    """
+    if text is None:                  # Fängt leere oder nicht vorhandene Eingaben (None) direkt ab.
+        return None                   # Gibt None sofort zurück, um Fehler bei String-Operationen zu verhindern.
+    text = apply_lexicon(text, lexicon) # 1. Ersetzt spezifische Fachbegriffe, Titel und Abkürzungen aus dem Lexikon.
+    text = spell_dates(text)            # 2. Formatiert Datumsangaben (z.B. 16.10.) in gesprochene Ordnungszahlen Und Monatsnamen um.
+    text = spell_times(text)            # 3. Wandelt Uhrzeiten (z.B. 11:51 Uhr) in eine natürlich gesprochene Form.
+    text = spell_units(text, whitelist) # 4. Verarbeitet Zahlen mit Einheiten und wendet die Whitelist-Rundung an.
+    text = spell_numbers(text)          # 5. Übersetzt alle verbleibenden, isolierten Zahlen im Text in Wörter.
+    text = spell_symbols(text)          # 6. Löst restliche Symbole (wie kaufmännisches Und oder Paragrafen) auf.
+    return text                         # Gibt den vollständig normalisierten, TTS-fertigen Text zurück.
