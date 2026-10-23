@@ -7,6 +7,11 @@
 """
 
 import re
+import json
+import logging
+from pathlib import Path
+
+from stage_io import load_stage, save_stage
 from decimal import Decimal, ROUND_HALF_UP
 from num2words import num2words
 
@@ -330,3 +335,44 @@ def normalize_text(text, whitelist, lexicon):
     text = spell_numbers(text)          # 5. Übersetzt alle verbleibenden, isolierten Zahlen im Text in Wörter.
     text = spell_symbols(text)          # 6. Löst restliche Symbole (wie kaufmännisches Und oder Paragrafen) auf.
     return text                         # Gibt den vollständig normalisierten, TTS-fertigen Text zurück.
+
+
+def load_config(path):
+    """Read a JSON config file (whitelist or lexicon)."""
+    with Path(path).open(encoding="utf-8") as file:
+        return json.load(file)
+
+
+def normalize_item(item, whitelist, lexicon):
+    """Return a copy of one item with title and teaser made speakable."""
+    new_item = dict(item)                                                   # Erstellt eine Kopie des Datensatzes, um das Original unverändert zu lassen.
+    new_item["title"] = normalize_text(item["title"], whitelist, lexicon)   # Wendet die Text-Normalisierung auf den Titel an.
+    new_item["teaser"] = normalize_text(item["teaser"], whitelist, lexicon) # Wendet die Text-Normalisierung auf den Teaser an.
+    return new_item                                                         # Gibt das verarbeitete Item zurück.
+
+
+def normalize(input_path, output_path, run_id, whitelist_path, lexicon_path):
+    """Run the stage normalize and report the result to run.py."""
+    try:
+        data = load_stage(input_path)
+        whitelist = load_config(whitelist_path)
+        lexicon = load_config(lexicon_path)
+    except (FileNotFoundError, json.JSONDecodeError) as error:
+        reason = f"input not readable: {error}"
+        save_stage(output_path, run_id, "normalize", [], "abort", reason)   # Protokolliert den Fehler und bricht die Stufe ab. 
+        logging.error("normalize aborted: %s", reason)
+        return "abort", output_path                                         # Signalisiert dem Runner den Abbruchstatus.
+
+    if not data["items"]:
+        reason = "no items in input"
+        save_stage(output_path, run_id, "normalize", [], "abort", reason)
+        logging.error("normalize aborted: %s", reason)
+        return "abort", output_path
+
+    items = []
+    for item in data["items"]:
+        items.append(normalize_item(item, whitelist, lexicon))              # Iteriert durch alle Items und normalisiert sie nacheinander.
+
+    save_stage(output_path, run_id, "normalize", items, "ok")               # Speichert die erfolgreich verarbeiteten Items mit Status "ok".
+    logging.info("normalize: %d items written to %s", len(items), output_path)
+    return "ok", output_path                                                # Gibt den erfolgreichen Abschluss an den Pipeline-Runner zurück
