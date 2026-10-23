@@ -1,4 +1,6 @@
 # src/normalize.py
+
+
 """Stage normalize. Docstring follows.
 
     python -m pytest -v
@@ -193,3 +195,28 @@ def spell_times(text):
     'Start um ein Uhr dreißig'
     """
     return TIME.sub(spell_time_match, text)
+
+
+def may_round(entry, value, text):
+    """Return True if the whitelist entry allows rounding this value.
+
+    Three checks: an entry exists for the unit, a keyword is in the text,
+    and the absolute value is at least min_abs.
+
+    >>> entry = {"unit": "%", "keywords": ["Marktanteil"], "round_to": 0, "min_abs": 1}
+    >>> may_round(entry, Decimal("2.8"), "Der Marktanteil stieg auf 2,8 %.")
+    True
+    >>> may_round(entry, Decimal("4.6"), "In der Umfrage kommt sie auf 4,6 %.")
+    False
+    >>> may_round(entry, Decimal("0.4"), "Der Marktanteil stieg um 0,4 %.")
+    False
+    >>> may_round(None, Decimal("20000"), "Der Marktanteil stieg um 20.000 €.") 
+    False
+    """
+    if entry is None:
+        return False
+    if not any(word in text for word in entry["keywords"]):
+        return False
+    if abs(value) < entry["min_abs"]:
+        return False
+    return True
