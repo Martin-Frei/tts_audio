@@ -235,3 +235,38 @@ def find_entry(whitelist, unit):
         if entry["unit"] == unit:
             return entry
     return None 
+
+
+UNITS = "|".join(re.escape(unit) for unit in UNIT_WORDS)
+UNIT_NUMBER = re.compile(r"(?<![\d.,])(-?\d+(?:\.\d{3})*(?:,\d+)?)\s?(" + UNITS + r")(?!\w)")
+#                          ----------- --- --- ------------ -----  ---   --------  ------
+#                          1           2   3   4            5      6     7         8
+# 1. (?<![\d.,]) : Stellt sicher, dass vor der Zahl keine Ziffer, kein Punkt oder Komma steht.
+# 2. -?          : Ermöglicht ein optionales Minuszeichen für negative Zahlenwerte.
+# 3. \d+         : Erfordert mindestens eine Startziffer für den ganzzahligen Teil.
+# 4. (?:\.\d{3})*: Erfasst optionale Tausenderpunkte mit jeweils exakt drei Ziffern.
+# 5. (?:,\d+)?   : Erlaubt einen optionalen Nachkommateil mit Komma und Ziffern.
+# 6. \s?         : Gestattet ein optionales Leerzeichen zwischen der Zahl und der Einheit.
+# 7. (...)       : Speichert die gültige Maßeinheit als eigenständige Erfassungsgruppe.
+# 8. (?!\w)      : Verhindert, dass direkt nach der Einheit ein weiteres Wortzeichen folgt. 
+
+
+def spell_units(text, whitelist):
+    """Write out all numbers with a unit, rounding where the whitelist allows.
+
+    >>> wl = [{"unit": "%", "keywords": ["Marktanteil"], "round_to": 0, "min_abs": 1}]
+    >>> spell_units("Der Marktanteil stieg auf 2,8 %.", wl)
+    'Der Marktanteil stieg auf knapp drei Prozent.'
+    >>> spell_units("In der Umfrage kommt sie auf 4,6 %.", wl)
+    'In der Umfrage kommt sie auf vier Komma sechs Prozent.'
+    """
+    def replace(match):
+        value = to_decimal(match.group(1))  # Numerischer Wert als Decimal (kann auch Dezimalstellen haben)
+        unit = match.group(2)               # Die erkannte Maßeinheit (z. B. %, kg)
+        entry = find_entry(whitelist, unit) # Passenden Whitelist-Eintrag für diese Einheit suchen
+        if may_round(entry, value, text):   # Prüfen, ob laut Whitelist (Keyword, min_abs) gerundet werden darf
+            rounded = round_half_up(value, entry["round_to"])  # Kaufmännisch auf die gewünschten Dezimalstellen runden
+            return spell_number(rounded, unit, qualifier(value, rounded))  # Mit Qualifizierer (z.B. "knapp") ausschreiben
+        return spell_number(value, unit)    # Fallback: Zahl ungerundet mit Einheit ausschreiben
+
+    return UNIT_NUMBER.sub(replace, text)
