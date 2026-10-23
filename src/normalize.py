@@ -289,3 +289,23 @@ def spell_symbols(text):
     for symbol, word in SYMBOL_WORDS.items():  # Iteriert durch alle definierten Symbole und deren gesprochene Wörter.
         text = text.replace(symbol, word)      # Ersetzt jedes gefundene Symbol im Text durch das ausgeschriebene Wort.
     return text                                # Gibt den bereinigten Text mit den aufgelösten Symbolen zurück.
+
+
+def apply_lexicon(text, lexicon):
+    """Replace whole words from the pronunciation lexicon.
+
+    >>> lexicon = {"DAX": "Dax", "Dr.": "Doktor", "F&E": "F und E"}
+    >>> apply_lexicon("Der DAX und der MDAX stiegen.", lexicon)
+    'Der Dax und der MDAX stiegen.'
+    >>> apply_lexicon("Dr. Müller leitet F&E.", lexicon)
+    'Doktor Müller leitet F und E.'
+    """
+    for written, spoken in lexicon.items():              # Iteriert durch alle Schlüssel-Wert-Paare (geschriebenes Wort und gesprochene Form) im Lexikon.
+        pattern = r"(?<!\w)" + re.escape(written) + r"(?!\w)"  # Erstellt ein sicheres RegEx-Muster mit Wortgrenzen für den aktuellen Begriff.
+        text = re.sub(pattern, spoken, text)             # Ersetzt alle Vorkommen des Begriffs im Text durch die gesprochene Variante.
+    return text
+
+# pattern = r"(?<!\w)" + re.escape(written) + r"(?!\w)"
+# 1. (?<!\w)   : Stellt sicher, dass vor dem Suchbegriff kein weiteres Wortzeichen steht (linker Wort-Grenzschutz).
+# 2. re.escape : Maskiert eventuelle Sonderzeichen im Suchbegriff, damit sie sicher als Text interpretiert werden.
+# 3. (?!\w)    : Stellt sicher, dass nach dem Suchbegriff kein weiteres Wortzeichen folgt (rechter Wort-Grenzschutz).
