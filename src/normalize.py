@@ -270,3 +270,22 @@ def spell_units(text, whitelist):
         return spell_number(value, unit)    # Fallback: Zahl ungerundet mit Einheit ausschreiben
 
     return UNIT_NUMBER.sub(replace, text)
+
+
+SYMBOL_WORDS = {
+    "&": "und",
+    "§": "Paragraf",
+}
+
+
+def spell_symbols(text):
+    """Replace symbols like & with spoken words.
+
+    >>> spell_symbols("Lindt & Sprüngli legt zu.")
+    'Lindt und Sprüngli legt zu.'
+    >>> spell_symbols("Streit um § 218.")
+    'Streit um Paragraf 218.'
+    """
+    for symbol, word in SYMBOL_WORDS.items():  # Iteriert durch alle definierten Symbole und deren gesprochene Wörter.
+        text = text.replace(symbol, word)      # Ersetzt jedes gefundene Symbol im Text durch das ausgeschriebene Wort.
+    return text                                # Gibt den bereinigten Text mit den aufgelösten Symbolen zurück.
