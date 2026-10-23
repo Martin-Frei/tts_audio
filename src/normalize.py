@@ -220,3 +220,18 @@ def may_round(entry, value, text):
     if abs(value) < entry["min_abs"]:
         return False
     return True
+
+
+def find_entry(whitelist, unit):
+    """Return the whitelist entry for a unit, or None if there is none.
+
+    >>> whitelist = [{"unit": "%", "keywords": ["Marktanteil"], "round_to": 0, "min_abs": 1}]
+    >>> find_entry(whitelist, "%")["unit"]
+    '%'
+    >>> find_entry(whitelist, "€") is None
+    True
+    """
+    for entry in whitelist:
+        if entry["unit"] == unit:
+            return entry
+    return None 
