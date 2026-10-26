@@ -1,3 +1,6 @@
+# src/clean.py
+
+
 """Stage clean: tidy title and teaser of every item in the raw file.
 
 Reads the _raw.json written by fetch and writes the _clean.json.
@@ -18,7 +21,7 @@ Workflow (clean):
     6. Return (status, output_path) to run.py.
 
 Functions:
-    load_raw(path)                  read the raw file, return a dictionary
+    load_raw(path)                  read the raw file (via stage_io.load_stage)
     remove_html(text)               remove HTML tags, decode entities like &amp;
     unify_quotes(text)              replace typographic double quotes with "
     unify_hyphens(text)             replace special hyphens with a normal -
@@ -27,12 +30,12 @@ Functions:
     clean_text(text)                run all rules in order, None stays None
     clean_item(item)                clean title and teaser of one item
     save_clean(path, run_id, items, status, reason=None)
-                                    write the clean file with metadata
+                                    write the clean file (via stage_io.save_stage)
     clean(input_path, output_path, run_id)
                                     run the stage, return (status, path)
 
 Dependencies:
-    Standard library only: html, json, logging, re, sys, datetime, pathlib.
+    stage_io (own module), standard library: html, json, logging, re, sys, pathlib.
 
 Start and test:
     python -m pytest -v
@@ -44,11 +47,11 @@ import json
 import logging
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
-# Only get the logger here. logging.basicConfig belongs to whoever starts
-# the program: the __main__ block below, later run.py.
+from stage_io import load_stage, save_stage
+
+
 logger = logging.getLogger(__name__)
 
 # Typographic double quotes that become a plain "
@@ -77,10 +80,8 @@ WHITESPACE = re.compile(r"\s+")
 
 def load_raw(path):
     """Read the raw file and return its content as a dictionary."""
-    # No try/except here: clean() catches the error, because only
-    # clean() decides about the status of the stage.
-    with open(path, encoding="utf-8") as file:
-        return json.load(file)
+
+    return load_stage(path)                 # Lädt die Rohdaten-Datei über load_stage und gibt sie zurück
 
 
 def remove_html(text):
@@ -92,10 +93,9 @@ def remove_html(text):
     >>> remove_html("<b>Eilmeldung</b> Brand &amp; Rauch")
     ' Eilmeldung  Brand & Rauch'
     """
-    # Tags first, entities second. The other way round, "&lt;b&gt;"
-    # would turn into "<b>" and be removed, although it was plain text.
-    text = HTML_TAG.sub(" ", text)
-    return html.unescape(text)
+    
+    text = HTML_TAG.sub(" ", text)  # Ersetzt HTML-Tags durch Leerzeichen, um Wortverschmelzungen zu verhindern
+    return html.unescape(text)      # Dekodiert HTML-Entitäten (z.B. &amp; zu &) und gibt den Text zurück
 
 
 def unify_quotes(text):
@@ -104,11 +104,10 @@ def unify_quotes(text):
     >>> unify_quotes("„Wir sind bereit“, sagte er.")
     '"Wir sind bereit", sagte er.'
     """
-    # Unify, not remove: quotes show that something is a quotation.
-    # Whether they are removed for speech is decided by normalize.
-    for quote in DOUBLE_QUOTES:
-        text = text.replace(quote, '"')
-    return text
+    
+    for quote in DOUBLE_QUOTES:             # Iteriert durch alle typografischen Anführungszeichen
+        text = text.replace(quote, '"')     # Ersetzt jedes typografische Anführungszeichen durch ein normales "
+    return text                             # Gibt den angepassten Text zurück
 
 
 def unify_hyphens(text):
@@ -117,10 +116,10 @@ def unify_hyphens(text):
     >>> unify_hyphens("KI\u2011Strategie")
     'KI-Strategie'
     """
-    # Replace, not delete: deleting would give "KIStrategie".
-    for hyphen in SPECIAL_HYPHENS:
-        text = text.replace(hyphen, "-")
-    return text
+   
+    for hyphen in SPECIAL_HYPHENS:          # Iteriert durch spezielle Bindestriche
+        text = text.replace(hyphen, "-")    # Ersetzt spezielle Bindestriche durch einen normalen Bindestrich
+    return text                             # Gibt den bereinigten Text zurück
 
 
 def remove_repeated_symbols(text):
@@ -133,8 +132,8 @@ def remove_repeated_symbols(text):
     >>> remove_repeated_symbols("1 + 1")
     '1 + 1'
     """
-    # The spaces next to the removed symbols stay. tidy_whitespace() runs last.
-    return REPEATED_SYMBOLS.sub("", text)
+ 
+    return REPEATED_SYMBOLS.sub("", text)               # Entfernt mehrfach wiederholte Symbole (z.B. +++) per Regex
 
 
 def tidy_whitespace(text):
@@ -143,7 +142,7 @@ def tidy_whitespace(text):
     >>> tidy_whitespace("  Brand   in Beispielstadt ")
     'Brand in Beispielstadt'
     """
-    return WHITESPACE.sub(" ", text).strip()
+    return WHITESPACE.sub(" ", text).strip()            # Fasst mehrfache Leerzeichen zu einem zusammen und entfernt Randabstände
 
 
 def clean_text(text):
@@ -157,16 +156,14 @@ def clean_text(text):
     >>> clean_text(None) is None
     True
     """
-    # A missing teaser stays missing. Without this check, re.sub()
-    # would crash with a TypeError on the first item without teaser.
+   
     if text is None:
-        return None
-    # Order matters: first remove characters, tidy up whitespace last.
-    text = remove_html(text)
-    text = unify_quotes(text)
-    text = unify_hyphens(text)
-    text = remove_repeated_symbols(text)
-    return tidy_whitespace(text)
+        return None                         # Gibt None direkt zurück, falls kein Text vorhanden ist.
+    text = remove_html(text)                # Entfernt HTML-Tags und dekodiert Entitäten
+    text = unify_quotes(text)               # Vereinheitlicht Anführungszeichen
+    text = unify_hyphens(text)              # Vereinheitlicht spezielle Bindestriche
+    text = remove_repeated_symbols(text)    # Entfernt wiederholte Symbole
+    return tidy_whitespace(text)            # Bereinigt Leerzeichen als letzten Schritt und gibt den Text zurück
 
 
 def clean_item(item):
@@ -177,66 +174,42 @@ def clean_item(item):
     >>> clean_item({"id": "m001", "title": "+++ A +++", "teaser": None})
     {'id': 'm001', 'title': 'A', 'teaser': None}
     """
-    # Make a copy, so the original item stays unchanged.
-    # A flat copy is enough, because the values are only texts or None.
-    cleaned = dict(item)
-    # .get() instead of item["title"]: a missing field gives None
-    # instead of a KeyError, and clean_text() handles None.
-    cleaned["title"] = clean_text(item.get("title"))
-    cleaned["teaser"] = clean_text(item.get("teaser"))
-    return cleaned
+    
+    cleaned = dict(item)                                # Erstellt eine flache Kopie des Datensatzes, um das Original zu schützen
+    cleaned["title"] = clean_text(item.get("title"))    # Bereinigt den Titel des Items
+    cleaned["teaser"] = clean_text(item.get("teaser"))  # Bereinigt den Teaser des Items
+    return cleaned                                      # Gibt das bereinigte Item zurück
 
 
 def save_clean(path, run_id, items, status, reason=None):
     """Write the clean file with metadata in front of the items."""
-    # stage and created are set here, not passed in:
-    # created is the moment the FILE is written, not the run_id of the run.
-    data = {
-        "run_id": run_id,
-        "stage": "clean",
-        "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "status": status,
-        "reason": reason,
-        "items": items,
-    }
-    # encoding="utf-8": how the characters are stored as bytes.
-    # ensure_ascii=False: umlauts appear as plain text, not as \u00fc.
-    # Python None becomes null in the file.
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=2)
+    save_stage(path, run_id, "clean", items, status, reason)    # Übergibt das Speichern an stage_io.save_stage
 
 
 def clean(input_path, output_path, run_id):
     """Run the stage clean and return (status, output_path) to run.py."""
-    # run.py may pass a text or a Path. Path() makes both the same.
-    input_path = Path(input_path)
-    output_path = Path(output_path)
+    input_path = Path(input_path)                               # Konvertiert den Eingangspfad in ein Path-Objekt
+    output_path = Path(output_path)                             # Konvertiert den Ausgangspfad in ein Path-Objekt
 
     try:
-        raw = load_raw(input_path)
+        raw = load_raw(input_path)                              # Versucht, die Rohdaten-Datei zu laden
     except (OSError, json.JSONDecodeError) as error:
-        # OSError: file missing or locked. JSONDecodeError: file is not valid JSON.
-        reason = f"raw file not readable: {error}"
-        logger.error(reason)
-        # Write a file even on abort, so the abort leaves a trace with a reason.
-        save_clean(output_path, run_id, [], "abort", reason)
-        return "abort", output_path     # raw file not readable -> abort
+        reason = f"raw file not readable: {error}"              # Erstellt eine Fehlerbeschreibung bei Lesefehlern
+        logger.error(reason)                                    # Loggt den Fehler
+        save_clean(output_path, run_id, [], "abort", reason)    # Speichert den Abbruchstatus in der Zieldatei
+        return "abort", output_path                             # raw file not readable -> abort
 
-    # "or []" also catches "items": null in the file.
-    items = raw.get("items") or []
+    items = raw.get("items") or []                              # Extrahiert die Artikelliste oder nutzt eine leere Liste als Fallback
     if not items:
-        # Should not happen after fetch "ok". Safety net for a manual start.
-        reason = "raw file has no items"
-        logger.error(reason)
-        save_clean(output_path, run_id, [], "abort", reason)
-        return "abort", output_path     # no items -> abort
+        reason = "raw file has no items"                        # Grund für Abbruch bei leerer Artikelliste
+        logger.error(reason)                                    # Loggt den Fehler
+        save_clean(output_path, run_id, [], "abort", reason)    # Speichert den Abbruchstatus
+        return "abort", output_path                             # no items -> abort
 
-    # One cleaned item per raw item: clean never removes an item.
-    # The test checks that the count in equals the count out.
-    cleaned = [clean_item(item) for item in items]
-    save_clean(output_path, run_id, cleaned, "ok")
-    logger.info("clean: %d items written to %s", len(cleaned), output_path)
-    return "ok", output_path
+    cleaned = [clean_item(item) for item in items]                          # Bereinigt jedes Item in der Liste per List Comprehension
+    save_clean(output_path, run_id, cleaned, "ok")                          # Speichert die erfolgreich bereinigten Daten mit Status "ok"
+    logger.info("clean: %d items written to %s", len(cleaned), output_path) # Loggt die Anzahl geschriebener Einträge
+    return "ok", output_path                                                # Gibt Status und Ausgabepfad an den Runner zurück
 
 
 if __name__ == "__main__":

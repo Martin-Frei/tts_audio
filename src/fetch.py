@@ -23,33 +23,33 @@ Functions:
     fetch_feed(url, timeout=10) -> FeedParserDict | None
     to_utc(parsed_time) -> str | None
     parse_entry(entry, source) -> dict
-    save_raw(path, run_id, items, status, reason=None) -> None
+    save_raw(path, run_id, items, status, reason=None) -> None  (via stage_io.save_stage)
     fetch(feeds_path, output_path, run_id) -> tuple (status, output_path)
 
 Dependencies:
-    feedparser, pyyaml, requests
+    feedparser, pyyaml, requests, stage_io (own module)
 
 Test:
     python -m pytest -v    # all tests and doctests
 """
 
-import logging 
+import logging
 import time
-import json
-from datetime import datetime, timezone
 
 import requests
 import feedparser
 import yaml
+
+from stage_io import save_stage
 
 logger = logging.getLogger(__name__)
 
 
 def load_feed_list(path):
     """Read config/feeds.yaml and return the feeds as a dictionary (name -> URL)."""
-    with open(path, encoding="utf-8") as file:
-        data = yaml.safe_load(file)
-    return data["feeds"]
+    with open(path, encoding="utf-8") as file:      # Öffnet die Konfigurationsdatei im Lesemodus mit UTF-8-Codierung
+        data = yaml.safe_load(file)                 # Lädt die YAML-Inhalte sicher als Python-Struktur
+    return data["feeds"]                            # Gibt das Dictionary mit den Feeds (Name -> URL) zurück
 
 
 def fetch_feed(url, timeout=10):
@@ -59,24 +59,24 @@ def fetch_feed(url, timeout=10):
     or when it delivers no entries.
     A feed with entries but a format warning (bozo) is still used.
     """
-    try:
-        response = requests.get(url, timeout=timeout)    
-        response.raise_for_status()
+    try: 
+        response = requests.get(url, timeout=timeout)                       # Führt einen HTTP-GET-Request für die Feed-URL mit Zeitlimit durch 
+        response.raise_for_status()                                         # Löst bei HTTP-Fehlern (z.B. 404 oder 500) eine Exception aus
     except requests.RequestException as error:
-        logger.warning("Feed failed: %s (%s)", url, error)
-        return None 
+        logger.warning("Feed failed: %s (%s)", url, error)                  # Loggt eine Warnung, falls der Abruf fehlschlägt
+        return None                                                         # Gibt None zurück, um den fehlgeschlagenen Feed zu überspringen
 
-    result = feedparser.parse(response.content)
+    result = feedparser.parse(response.content)                             # Parst den heruntergeladenen Feed-Inhalt mit feedparser
 
-    if len(result.entries) == 0:
-        logger.warning("Feed failed: %s (no entries, %s)", url, result.get("bozo_exception"))
-        return None
+    if len(result.entries) == 0:                                            # Einträge ist gleich 0
+        logger.warning("Feed failed: %s (no entries, %s)", url, result.get("bozo_exception"))  # Loggt eine Warnung, wenn keine Einträge vorhanden sind
+        return None                                                         # Gibt None zurück
 
     if result.bozo:
-        logger.warning("Feed has format issues but is used: %s (%s)",
+        logger.warning("Feed has format issues but is used: %s (%s)",       # Loggt Formatwarnungen (bozo), nutzt den Feed aber dennoch
                        url, result.get("bozo_exception"))
 
-    return result
+    return result                                                           # Gibt das geparste Ergebnis zurück
 
 
 def to_utc(parsed_time):
@@ -87,34 +87,26 @@ def to_utc(parsed_time):
     >>> to_utc(None) is None
     True
     """
-    if parsed_time is None:
-        return None
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", parsed_time) 
+    if parsed_time is None:                                         # Prüft, ob keine Zeitinformation übergeben wurde
+        return None                                                 # Gibt direkt None zurück
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", parsed_time)         # Konvertiert die Zeitstruktur in einen ISO-8601-UTC-String
 
 
 def parse_entry(entry, source):
     """Extract the fields we keep from one feed entry and return them as a dictionary."""
     return {
-        "source": source,                                      
-        "title": entry.get("title"),                   
-        "teaser": entry.get("summary"),                
-        "link": entry.get("link"), 
-        "published": to_utc(entry.get("published_parsed")),
+        "source": source,                                       # Speichert den Namen der Feed-Quelle              
+        "title": entry.get("title"),                            # Extrahiert den Titel des Artikels
+        "teaser": entry.get("summary"),                         # Extrahiert den Teaser oder die Zusammenfassung
+        "link": entry.get("link"),                              # Extrahiert den Weblink zum Originalbeitrag
+        "published": to_utc(entry.get("published_parsed")),     # Konvertiert und speichert das Veröffentlichungsdatum in UTC
     }
 
 
 def save_raw(path, run_id, items, status, reason=None):
     """Write the raw stage file with metadata and all items."""
-    data = {
-        "run_id": run_id, 
-        "stage": "fetch",  
-        "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "status": status,
-        "reason": reason,
-        "items": items, 
-    }
-    with open(path, "w", encoding="utf-8") as file: 
-        json.dump(data, file, ensure_ascii=False, indent=2)
+    # The frame is the same for every stage: written in stage_io.save_stage().
+    save_stage(path, run_id, "fetch", items, status, reason)    # Übergibt das Schreiben der Rohdaten an stage_io.save_stage
 
 
 def fetch(feeds_path, output_path, run_id):
@@ -122,29 +114,29 @@ def fetch(feeds_path, output_path, run_id):
 
     Returns a tuple (status, output_path) for run.py.
     """
-    feeds = load_feed_list(feeds_path)
-    items = []
-    number = 1
+    feeds = load_feed_list(feeds_path)                   # Lädt die Feed-Liste (Name zu URL) aus der Konfigurationsdatei
+    items = []                                           # Initialisiert eine leere Liste für alle gesammelten Einträge
+    number = 1                                           # Initialisiert den laufenden Zähler für die eindeutigen Item-IDs
 
-    for source, url in feeds.items():                
-        result = fetch_feed(url)
+    for source, url in feeds.items():                    # Durchläuft alle definierten Feeds nacheinander
+        result = fetch_feed(url)                         # Lädt den aktuellen Feed herunter und parst ihn
         if result is None:
             continue                                     # ausgefallen: Feed überspringen
 
-        for entry in result.entries:
-            item = parse_entry(entry, source)
+        for entry in result.entries:                     # Durchläuft alle einzelnen Beiträge des Feeds
+            item = parse_entry(entry, source)            # Extrahiert die relevanten Datenfelder des Eintrags
             item = {"id": f"m{number:03d}", **item}      # Kennung vorne einfügen
-            items.append(item)   
-            number += 1
+            items.append(item)                           # Fügt das bearbeitete Item zur Gesamtliste hinzu
+            number += 1                                  # Inkrementiert den ID-Zähler für das nächste Item
 
-    if len(items) == 0:                             
-        status, reason = "abort", "no feed reachable"
+    if len(items) == 0:                                  # Prüft, ob nach dem Durchlauf aller Feeds keine Items gesammelt wurden
+        status, reason = "abort", "no feed reachable"    # Setzt den Status auf "abort" und gibt einen Grund an
     else:
-        status, reason = "ok", None
+        status, reason = "ok", None                      # Setzt den Status auf "ok", wenn Daten erfolgreich gesammelt wurden
 
-    save_raw(output_path, run_id, items, status, reason)
-    logger.info("fetch: %d items, status %s", len(items), status)
-    return status, output_path                          
+    save_raw(output_path, run_id, items, status, reason) # Speichert die Rohdaten-Datei im Dateisystem
+    logger.info("fetch: %d items, status %s", len(items), status)  # Loggt die Anzahl gesammelter Artikel und den Endstatus
+    return status, output_path                          # Gibt Status und den Ausgabepfad an den Runner zurück                         
 
 
 if __name__ == "__main__":

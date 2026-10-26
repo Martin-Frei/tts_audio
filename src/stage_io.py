@@ -32,8 +32,8 @@ def load_stage(path):
     json.JSONDecodeError if it is not valid JSON. The calling stage
     decides what happens then, usually status "abort".
     """
-    with Path(path).open(encoding="utf-8") as file:
-        return json.load(file)
+    with Path(path).open(encoding="utf-8") as file:     # Öffnet die Stufen-Datei im Lesemodus mit UTF-8-Codierung
+        return json.load(file)                          # Liest den JSON-Inhalt ein und gibt ihn als Dictionary zurück
 
 
 def save_stage(path, run_id, stage, items, status, reason=None):
@@ -42,15 +42,15 @@ def save_stage(path, run_id, stage, items, status, reason=None):
     created is set here, in UTC. The parent folder is created if needed,
     because Git does not keep empty folders.
     """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    data = {
+    path = Path(path)                                   # Konvertiert den übergebenen Pfad in ein Path-Objekt
+    path.parent.mkdir(parents=True, exist_ok=True)      # Erstellt den übergeordneten Ordner rekursiv, falls er nicht existiert
+    data = {                                            # Erstellt das standardisierte Frame-Dictionary mit Metadaten
         "run_id": run_id,
         "stage": stage,
-        "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # Setzt den aktuellen UTC-Zeitstempel
         "status": status,
         "reason": reason,
         "items": items,
     }
-    with path.open("w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=2)
+    with path.open("w", encoding="utf-8") as file:              # Öffnet die Zieldatei im Schreibmodus mit UTF-8-Codierung
+        json.dump(data, file, ensure_ascii=False, indent=2)     # Schreibt das strukturierte Dictionary formatiert als JSON
