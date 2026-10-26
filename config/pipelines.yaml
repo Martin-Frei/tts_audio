@@ -1,0 +1,20 @@
+# Pipeline profiles: which stages run, in which order, with which settings.
+# Configuration, not code: a new profile is a new block here.
+
+profiles:
+  news_piper:
+    project: news
+    stages:
+      - fetch
+      - clean
+      - normalize
+      - residue_check
+      - select_items
+      - tts_piper
+      - postprocess
+    params:
+      feeds: config/feeds.yaml
+      whitelist: config/rundung_whitelist.json
+      lexicon: config/aussprache_lexikon.json
+      max_items: 20
+      voice: voices/de_DE-thorsten-high.onnx
