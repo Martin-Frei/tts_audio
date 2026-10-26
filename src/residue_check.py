@@ -1,5 +1,44 @@
 # src/residue_check.py
 
+"""Stage residue_check: find what normalize left over, change nothing.
+
+Reads the _normalize.json and writes the check_report (_residue_check.json).
+residue_check only checks. It never changes a text and passes no text on:
+tts_piper reads the _normalize.json, but only if this stage reports "ok".
+
+Workflow (residue_check):
+    1. Receive input_path, output_path and run_id from run.py.
+    2. Load the normalize file with load_stage().
+       If it cannot be read: status "abort" with a reason.
+    3. For each item: search title and teaser with find_residues()
+       for digits, abbreviations in capitals, symbols and URLs.
+       Every finding is noted with item id, field and the found text.
+    4. Zero tolerance: a single finding sets status "abort".
+       The search still runs to the end, so all findings can be fixed
+       in one round (lexicon or normalize, then a regression case in
+       tests/testsatz.txt).
+    5. Write the check_report with save_stage(): the findings take the
+       place of the items.
+    6. Return (status, output_path) to run.py.
+
+Functions:
+    find_residues(text)                          all residues in one text, [] for None
+    residue_check(input_path, output_path, run_id)
+                                                 run the stage, return (status, path)
+
+Dependencies:
+    stage_io (own module), standard library: json, logging, re.
+
+Known limits:
+    Mixed abbreviations like "AfD" are not found (lowercase letter inside).
+    Wrong but complete conversions ("siebzehn. UN-Konferenz") are not found:
+    they contain no residue. Only the test sentence and the ear find them.
+
+Start and test:
+    python -m pytest -v
+"""
+
+
 import json 
 import logging 
 import re 
