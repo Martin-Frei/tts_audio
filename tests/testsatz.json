@@ -1,0 +1,195 @@
+{
+  "run_id": "testsatz",
+  "stage": "testsatz",
+  "created": "2026-10-26T00:00:00Z",
+  "status": "ok",
+  "reason": null,
+  "items": [
+    {
+      "id": "t001",
+      "title": "Am 16.10. um 9:15 Uhr berichtete die ARD über den Streik.",
+      "teaser": null,
+      "checks": "Datum mit Endung -ten, Uhrzeit, buchstabiertes Kürzel aus dem Lexikon"
+    },
+    {
+      "id": "t002",
+      "title": "Der 3.5. ist ein Sonntag.",
+      "teaser": null,
+      "checks": "Datum nach 'der', Endung -te"
+    },
+    {
+      "id": "t003",
+      "title": "Die NATO und Dr. Muster trafen sich mit Prof. Beispiel.",
+      "teaser": null,
+      "checks": "Kürzel als Wort gesprochen, Abkürzungen mit Punkt"
+    },
+    {
+      "id": "t004",
+      "title": "Der Marktanteil stieg auf 2,8 %.",
+      "teaser": null,
+      "checks": "Rundung erlaubt: knapp drei Prozent"
+    },
+    {
+      "id": "t005",
+      "title": "Das Wachstum lag bei 0,4 %.",
+      "teaser": null,
+      "checks": "unter min_abs: nicht runden"
+    },
+    {
+      "id": "t006",
+      "title": "In der Umfrage kommt die Partei auf 4,6 %.",
+      "teaser": null,
+      "checks": "Schwellenwert nahe Fünfprozenthürde: nie runden"
+    },
+    {
+      "id": "t007",
+      "title": "Die Arbeitslosenquote stieg von 6,2 auf 6,3 %.",
+      "teaser": null,
+      "checks": "Quote und Vergleich: nie runden"
+    },
+    {
+      "id": "t008",
+      "title": "Der Dax steht bei 19.450 Punkten.",
+      "teaser": null,
+      "checks": "Tausenderpunkt, Indexstand nie runden"
+    },
+    {
+      "id": "t009",
+      "title": "Die Tagesmiete beträgt 2,50 €.",
+      "teaser": null,
+      "checks": "Geldbetrag mit Cent (bekannt offen: Euro und Cent)"
+    },
+    {
+      "id": "t010",
+      "title": "Die Temperatur fiel auf -0,4 Grad.",
+      "teaser": null,
+      "checks": "negativer Messwert mit Einheit, Minus darf nicht verloren gehen"
+    },
+    {
+      "id": "t011",
+      "title": "Das Treffen beginnt um 1:30 Uhr und endet um 12 Uhr.",
+      "teaser": null,
+      "checks": "ein Uhr statt eins Uhr, volle Stunde ohne null"
+    },
+    {
+      "id": "t012",
+      "title": "Es war ihr 55. Geburtstag.",
+      "teaser": null,
+      "checks": "Ordnungszahl im Satz (bekannt offen)"
+    },
+    {
+      "id": "t013",
+      "title": "Er wurde 55. Danach zog er nach Berlin.",
+      "teaser": null,
+      "checks": "echtes Satzende nach einer Zahl"
+    },
+    {
+      "id": "t014",
+      "title": "Am 1. Mai wird gefeiert.",
+      "teaser": null,
+      "checks": "Zahl, Punkt, Monatsname (bekannt offen)"
+    },
+    {
+      "id": "t015",
+      "title": "Im Jahr 1990 wurde die Stadt gegründet.",
+      "teaser": null,
+      "checks": "Jahreszahl vor 2000 (bekannt offen)"
+    },
+    {
+      "id": "t016",
+      "title": "Die Studie lief von 2020-2024.",
+      "teaser": null,
+      "checks": "Bereich ohne 'bis' (bekannt offen)"
+    },
+    {
+      "id": "t017",
+      "title": "Muster & Söhne verlegen ihren Sitz.",
+      "teaser": null,
+      "checks": "Zeichen & als Wort"
+    },
+    {
+      "id": "t018",
+      "title": "Die Chipaktien und ETFs gaben nach.",
+      "teaser": null,
+      "checks": "Lexikon: Fremdwort, Kürzel im Plural"
+    },
+    {
+      "id": "t019",
+      "title": "Die COP17 beginnt, der 7er wird vorgestellt.",
+      "teaser": null,
+      "checks": "Lexikon: Zahlen an Buchstaben"
+    },
+    {
+      "id": "t020",
+      "title": "Der G7-Gipfel und das 5G-Netz sind Thema.",
+      "teaser": null,
+      "checks": "Zahlen an Buchstaben ohne Lexikoneintrag: residue_check muss melden"
+    },
+    {
+      "id": "t021",
+      "title": "Der MDAX und der Dax fielen.",
+      "teaser": null,
+      "checks": "Wortgrenze: MDAX ist nicht DAX"
+    },
+    {
+      "id": "t022",
+      "title": "Papst Leo XIV. besuchte St. Beispiel.",
+      "teaser": null,
+      "checks": "römische Zahl im Namen, St. als Sankt"
+    },
+    {
+      "id": "t023",
+      "title": "Der Podcast 11KM erklärt die Lage.",
+      "teaser": null,
+      "checks": "Eigenname mit Ziffern im Lexikon"
+    },
+    {
+      "id": "t024",
+      "title": "Die USA und die EU verhandeln über KI.",
+      "teaser": null,
+      "checks": "buchstabierte Kürzel"
+    },
+    {
+      "id": "t025",
+      "title": "Präsident Trump sprach mit Selenskyj in Kiew.",
+      "teaser": null,
+      "checks": "ausländische Namen und Orte"
+    },
+    {
+      "id": "t026",
+      "title": "Der Ölpreis steigt.",
+      "teaser": "Warum? Niemand weiß es genau. Die Lage bleibt unklar.",
+      "checks": "Ö am Wortanfang, Pause nach Titel, Fragezeichen, mehrere Sätze im Teaser"
+    },
+    {
+      "id": "t027",
+      "title": "Neue Regeln für Mieter",
+      "teaser": "Das Gesetz gilt ab Januar – mit Ausnahmen.",
+      "checks": "Titel ohne Satzzeichen, Gedankenstrich"
+    },
+    {
+      "id": "t028",
+      "title": "Das Angebot heißt best4you, der Slogan nice2see.",
+      "teaser": null,
+      "checks": "Kunstwort mit Ziffer"
+    },
+    {
+      "id": "t029",
+      "title": "Die Metzgermeister:innen trafen sich.",
+      "teaser": null,
+      "checks": "Gendern mit Doppelpunkt"
+    },
+    {
+      "id": "t030",
+      "title": "Die Metzgermeister*innen trafen sich.",
+      "teaser": null,
+      "checks": "Gendern mit Sternchen"
+    },
+    {
+      "id": "t031",
+      "title": "Die Metzgermeister_innen und MetzgermeisterInnen trafen sich.",
+      "teaser": null,
+      "checks": "Gendern mit Unterstrich und Binnen-I"
+    }
+  ]
+}

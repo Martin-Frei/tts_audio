@@ -12,7 +12,8 @@ Workflow (run.py):
        overwritten, the manifest notes the restart with the time.
     3. plan() gives every stage its input file and its output file.
        A check stage (residue_check) passes no text on: the next stage
-       reads the file of the stage before the check.
+       reads the file of the stage before the check. If the profile has
+       params.input, the first stage reads that file (test sentence).
     4. For each stage: call it, then read its file. A stage counts as done
        only if its file exists AND its status is "ok". The file is the
        truth, not the returned value.
@@ -23,7 +24,8 @@ Workflow (run.py):
 
 Functions:
     stage_file(run_dir, project, run_id, stage)   path of a stage file
-    plan(stages, run_dir, project, run_id)        (stage, input, output) per stage
+    plan(stages, run_dir, project, run_id, first_input=None)
+                                                  (stage, input, output) per stage
     latest_run(project)                           run_id of the newest run
     run(profile_name, run_id, from_stage=None)    run the stages, return (status, info)
     main()                                        command line
@@ -35,6 +37,7 @@ Start:
     python run.py --profile news_piper
     python run.py --profile news_piper --from normalize
     python run.py --profile news_piper --from normalize --run 2026-10-26_0800
+    python run.py --profile testsatz_piper
 """
 
 import argparse
@@ -93,17 +96,20 @@ def stage_file(run_dir, project, run_id, stage):
     return run_dir / f"{project}_{run_id}_{name}.json"
 
 
-def plan(stages, run_dir, project, run_id):
+def plan(stages, run_dir, project, run_id, first_input=None):
     """Return (stage, input_path, output_path) for every stage.
 
     A check stage gets the text file, but the next stage gets it too.
+    first_input is the input of the first stage, None for fetch.
 
     >>> steps = plan(["fetch", "normalize", "residue_check", "select_items"], Path("r"), "news", "x")
     >>> [(s, i.name if i else None, o.name) for s, i, o in steps]
     [('fetch', None, 'news_x_raw.json'), ('normalize', 'news_x_raw.json', 'news_x_normalize.json'), ('residue_check', 'news_x_normalize.json', 'news_x_residue_check.json'), ('select_items', 'news_x_normalize.json', 'news_x_select_items.json')]
+    >>> plan(["normalize"], Path("r"), "testsatz", "x", Path("tests/testsatz.json"))[0][1].name
+    'testsatz.json'
     """
     steps = []
-    text_file = None
+    text_file = first_input
     for stage in stages:
         output = stage_file(run_dir, project, run_id, stage)
         steps.append((stage, text_file, output))
@@ -146,7 +152,9 @@ def run(profile_name, run_id, from_stage=None):
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     started = from_stage is None
-    for stage, input_path, output_path in plan(stages, run_dir, project, run_id):
+    # The test sentence profile names its first input; fetch needs none.
+    first_input = Path(params["input"]) if "input" in params else None
+    for stage, input_path, output_path in plan(stages, run_dir, project, run_id, first_input):
         if not started:
             if stage != from_stage:
                 continue

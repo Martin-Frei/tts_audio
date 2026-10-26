@@ -18,3 +18,18 @@ profiles:
       lexicon: config/aussprache_lexikon.json
       max_items: 20
       voice: voices/de_DE-thorsten-high.onnx
+
+  # The test sentence: fixed problem cases, spoken through the same stages.
+  # No fetch, clean or select_items: every case is spoken, in a fixed order.
+  testsatz_piper:
+    project: testsatz
+    stages:
+      - normalize
+      - residue_check
+      - tts_piper
+      - postprocess
+    params:
+      input: tests/testsatz.json
+      whitelist: config/rundung_whitelist.json
+      lexicon: config/aussprache_lexikon.json
+      voice: voices/de_DE-thorsten-high.onnx
