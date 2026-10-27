@@ -99,7 +99,7 @@ def spell_number(value, unit, word=None):
     >>> spell_number(Decimal("0.4"), "%")
     'null Komma vier Prozent'
     """
-    spoken = num2words(value, lang="de")        # Wandelt den reinen Zahlenwert in das entsprechende deutsche Zahlwort um
+    spoken = say_number(value)                  # Wandelt den reinen Zahlenwert in das entsprechende deutsche Zahlwort um
     text = spoken + " " + UNIT_WORDS[unit]      # Verbindet das Zahlwort mit dem ausgeschriebenen Wort der Einheit (z.B. "drei" + " " + "Prozent")
     if word is not None:                        # Prüft, ob ein zusätzlicher Qualifizierer (wie "knapp" oder "gut") übergeben wurde
         text = word + " " + text                # Setzt den Qualifizierer vor den Text (z.B. "knapp drei Prozent")
@@ -108,19 +108,42 @@ def spell_number(value, unit, word=None):
 
 
 LETTERS = "A-Za-zÄÖÜäöüß"
-NUMBER = re.compile(r"(?<![" + LETTERS + r"\d])\d+(?:\.\d{3})*(?:,\d+)?(?![" + LETTERS + r"])")
+NUMBER = re.compile(r"(?<![" + LETTERS + r"\d])\d+(?:\.\d{3})*(?:,\d+)?(?![" + LETTERS + r"\d])(?!\.\s+[" + LETTERS + r"])"
+)
 
-# Regex-Muster für isolierte Zahlen (Ganzzahlen, Tausenderpunkte, Dezimalkommas):
+# Regex-Muster für isolierte Zahlen mit 6 detaillierten Schutz- und Formatregeln:
 # 
-# 1. (?<![A-Za-zÄÖÜäöüß\d]) -> Negatives Lookbehind: Zahl darf nicht direkt hinter einem Buchstaben oder einer anderen Ziffer stehen.
-# 2. \d+                  -> Der Ganzzahl-Kern (mindestens eine Ziffer 0-9).
-# 3. (?:\.\d{3})*         -> Optional: Deutsche Tausenderblöcke (z. B. 1.234 oder 1.000.000).
-# 4. (?:,\d+)?            -> Optional: Nachkommastellen mit Dezimalkomma (z. B. ,50).
-# 5. (?![A-Za-zÄÖÜäöüß])   -> Negatives Lookahead: Nach der Zahl darf kein Buchstabe folgen (schützt z.B. vor Einheiten wie "100g").
+# 1. (?<![LETTERS...])      -> Negatives Lookbehind: Unmittelbar vor der Zahl darf kein Buchstabe stehen.
+# 2. (?<!...\d)            -> Negatives Lookbehind: Unmittelbar vor der Zahl darf auch keine andere Ziffer stehen.
+# 3. \d+                   -> Der Ganzzahl-Kern: Es muss mindestens eine Ziffer (0-9) vorhanden sein.
+# 4. (?:\.\d{3})*          -> Tausendergruppen: Erlaubt optional deutsche Tausendertrennpunkte (z. B. .234).
+# 5. (?:,\d+)?             -> Dezimalteil: Erlaubt optional ein Komma gefolgt von beliebigen Nachkommastellen (z. B. ,50).
+# 6. Lookaheads danach     -> Schließt nachfolgende Zeichen (Buchstaben/Ziffern) sowie Ordnungszahlen/Aufzählungen (wie "1. Januar") aus.
+
 
 def spell_plain_number(match):
     """Return one found number as spoken German (helper for re.sub)."""
-    return num2words(to_decimal(match.group()), lang="de")      #Konvertiert den Text in ein decimal object, num2words wandelt um 
+    return say_number(to_decimal(match.group()))                # Konvertiert den Text in ein decimal object, say_number wandelt um 
+
+
+RANGE = re.compile(r"(?<=\d)-(?=\d)")
+# 1. (?<=\d)        -> Positives Lookbehind: Prüft den linken Teil vor dem Bindestrich.
+# 2. Linke Ziffern   -> Stellt sicher, dass direkt vor dem Trenner mindestens eine Ziffer steht.
+# 3. -               -> Das Trennzeichen: Matcht den eigentlichen Bindestrich der Spanne.
+# 4. (?=\d)         -> Positives Lookahead: Prüft den rechten Teil nach dem Bindestrich.
+# 5. Rechte Ziffern  -> Stellt sicher, dass direkt nach dem Trenner mindestens eine Ziffer folgt.
+# 6. Zweck           -> Unterscheidet echte Zahlenbereiche zuverlässig von Wort-Bindestrichen.
+
+
+def spell_ranges(text):
+    """Replace a dash between two numbers with 'bis'.
+
+    >>> spell_ranges("Die Studie lief von 2020-2024.")
+    'Die Studie lief von 2020 bis 2024.'
+    >>> spell_ranges("Die A8-Ausfahrt ist gesperrt.")
+    'Die A8-Ausfahrt ist gesperrt.'
+    """
+    return RANGE.sub(" bis ", text)
 
 
 def spell_numbers(text):
@@ -132,8 +155,62 @@ def spell_numbers(text):
     'Keine Zahl hier.'
     >>> spell_numbers("Der G7-Gipfel und das 5G-Netz.")
     'Der G7-Gipfel und das 5G-Netz.'
+    >>> spell_numbers("Er feierte 55. Geburtstag.")
+    'Er feierte 55. Geburtstag.'
+    >>> spell_numbers("Er wurde 55.")
+    'Er wurde fünfundfünfzig.'
     """
     return NUMBER.sub(spell_plain_number, text)
+
+def say_number(value):
+    """Return a number as spoken German; 1100 to 1999 in hundreds.
+
+    >>> say_number(1990)
+    'neunzehnhundertneunzig'
+    >>> say_number(2024)
+    'zweitausendvierundzwanzig'
+    >>> say_number(Decimal("1500.5"))
+    'eintausendfünfhundert Komma fünf'
+    """
+    if value == int(value) and 1100 <= value <= 1999:
+        return num2words(int(value), lang="de", to="year")
+    return num2words(value, lang="de")
+
+
+ORDINAL_ENDINGS = {
+    "am": "n", "im": "n", "zum": "n", "beim": "n", "dem": "n", "den": "n",
+    "der": "", "die": "", "das": "",
+    "ihr": "r", "sein": "r", "mein": "r", "unser": "r",
+}
+
+ORDINAL = re.compile(r"\b(\w+) (\d+)\. (?=\w)")
+# Regex-Muster zum Erkennen von Signalwort + Zahl mit Punkt (z. B. "am 1." oder "der 15."):
+# 
+# 1. \b          -> Wortgrenze: Stellt sicher, dass das Signalwort am Anfang steht.
+# 2. (\w+)       -> Erste Gruppe: Das Signalwort (Präposition oder Artikel, z. B. am oder der).
+# 3.             -> Das feste trennende Leerzeichen zwischen Signalwort und Zahl.
+# 4. (\d+)       -> Zweite Gruppe: Die Ziffern der Zahl/des Datums.
+# 5. \.          -> Der Punkt direkt nach der Zahl.
+# 6. (?=\w)      -> Positives Lookahead: Stellt sicher, dass nach dem folgenden Leerzeichen ein Wort beginnt.
+
+def spell_ordinals(text):
+    """Spell a number with a period as an ordinal if a signal word precedes it.
+    
+    >>> spell_ordinals("Es war ihr 55. Geburtstag.")
+    'Es war ihr fünfundfünfzigster Geburtstag.'
+    >>> spell_ordinals("Am 1. Mai wird gefeiert.")
+    'Am ersten Mai wird gefeiert.'
+    >>> spell_ordinals("Er feierte 55. Geburtstag.")
+    'Er feierte 55. Geburtstag.'
+    """
+    def replace(match):
+        word = match.group(1)                                                   # Holt das gefundene Signalwort (z. B. "am")
+        ending = ORDINAL_ENDINGS.get(word.lower())                              # Sucht die passende Endung in ORDINAL_ENDINGS
+        if ending is None:                                                      # Wenn Signal wort is None, dann....                            
+            return match.group(0)                                               # .... behalte Text
+        number = int(match.group(2))                                            # In number wird die gefunden Ziffer umgewandelt int
+        return f"{word} {num2words(number, lang='de', to='ordinal')}{ending} "  # Generiert number => num2word und bindet word und Leerzeichen ein 
+    return ORDINAL.sub(replace, text)                                           # Iteriert durch alle Fälle im text
 
 
 def spell_date(day, month, previous_word):
@@ -321,6 +398,49 @@ def spell_symbols(text):
     return text                                # Gibt den bereinigten Text mit den aufgelösten Symbolen zurück.
 
 
+GENDER_MARK = re.compile(r"[:*_]innen\b")
+# [ :*_ ] matcht Doppelpunkt, Sternchen oder Unterstrich 
+# # \b stellt sicher, dass "innen" am Wortende steht.
+
+BINNEN_I = re.compile(r"(?<=[a-zäöüß])Innen\b")
+# (?<=[a-zäöüß]) stellt sicher, dass ein Kleinbuchstabe davor steht
+# \b beendet das Wort nach "Innen".
+
+def spell_gender(text):
+    """Replace gender marks (:, *, _) and the Binnen-I before 'innen' with a space.
+
+    >>> spell_gender("Die Metzgermeister*innen trafen sich.")
+    'Die Metzgermeister innen trafen sich.'
+    >>> spell_gender("Die Metzgermeister_innen trafen sich.")
+    'Die Metzgermeister innen trafen sich.'
+    >>> spell_gender("Die Metzgermeister:innen trafen sich.")
+    'Die Metzgermeister innen trafen sich.'
+    >>> spell_gender("Die MetzgermeisterInnen trafen sich.")
+    'Die Metzgermeister innen trafen sich.'
+    >>> spell_gender("Innen und Außen sind gleich warm.")
+    'Innen und Außen sind gleich warm.'
+    """
+    text = GENDER_MARK.sub(" innen", text)
+    return BINNEN_I.sub(" innen", text)
+
+
+MINUS = re.compile(r"(?<!\S)-(?=\d)")
+# (?<!\S) stellt sicher, dass kein Nicht-Leerzeichen davor steht (Wortanfang oder Leerzeichen)
+# - matcht das Minus-Zeichen selbst
+# (?=\d) stellt sicher, dass direkt danach eine Ziffer folgt
+
+
+def spell_minus(text):
+    """Replace a minus sign before a number with the word 'minus'.
+
+    >>> spell_minus("Die Temperatur fiel auf -0,4 Grad.")
+    'Die Temperatur fiel auf minus 0,4 Grad.'
+    >>> spell_minus("Die Studie lief von 2020-2024.")
+    'Die Studie lief von 2020-2024.'
+    """
+    return MINUS.sub("minus ", text)
+
+
 def apply_lexicon(text, lexicon):
     """Replace whole words from the pronunciation lexicon.
 
@@ -354,11 +474,15 @@ def normalize_text(text, whitelist, lexicon):
     if text is None:                    # Fängt leere oder nicht vorhandene Eingaben (None) direkt ab.
         return None                     # Gibt None sofort zurück, um Fehler bei String-Operationen zu verhindern.
     text = apply_lexicon(text, lexicon) # 1. Ersetzt spezifische Fachbegriffe, Titel und Abkürzungen aus dem Lexikon.
-    text = spell_dates(text)            # 2. Formatiert Datumsangaben (z.B. 16.10.) in gesprochene Ordnungszahlen Und Monatsnamen um.
-    text = spell_times(text)            # 3. Wandelt Uhrzeiten (z.B. 11:51 Uhr) in eine natürlich gesprochene Form.
-    text = spell_units(text, whitelist) # 4. Verarbeitet Zahlen mit Einheiten und wendet die Whitelist-Rundung an.
-    text = spell_numbers(text)          # 5. Übersetzt alle verbleibenden, isolierten Zahlen im Text in Wörter.
-    text = spell_symbols(text)          # 6. Löst restliche Symbole (wie kaufmännisches Und oder Paragrafen) auf.
+    text = spell_gender(text)           # 2. Ersetz : * _ nur wenn : * oder _ iVm innen vorkommt mit eine Leerzeichen
+    text = spell_minus(text)            # 3. Ersetz - mit minus wenn davor nichts oder Satzanfang ist udndananch gleich eien Zahl steht
+    text = spell_ranges(text)           # 4. Bestimtm Ranges um - mit bis zu ersetzen     
+    text = spell_dates(text)            # 5. Formatiert Datumsangaben (z.B. 16.10.) in gesprochene Ordnungszahlen Und Monatsnamen um.
+    text = spell_ordinals(text)         # 6. wandelt Ordinalzahlen um
+    text = spell_times(text)            # 7. Wandelt Uhrzeiten (z.B. 11:51 Uhr) in eine natürlich gesprochene Form.
+    text = spell_units(text, whitelist) # 8. Verarbeitet Zahlen mit Einheiten und wendet die Whitelist-Rundung an.
+    text = spell_numbers(text)          # 9. Übersetzt alle verbleibenden, isolierten Zahlen im Text in Wörter.
+    text = spell_symbols(text)          # 10. Löst restliche Symbole (wie kaufmännisches Und oder Paragrafen) auf.
     return text                         # Gibt den vollständig normalisierten, TTS-fertigen Text zurück.
 
 

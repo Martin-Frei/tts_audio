@@ -79,9 +79,9 @@
     },
     {
       "id": "t013",
-      "title": "Er wurde 55. Danach zog er nach Berlin.",
+      "title": "Er wurde 55, danach zog er nach Berlin.",
       "teaser": null,
-      "checks": "echtes Satzende nach einer Zahl"
+      "checks": "Zahl vor Komma; Satzende nach Zahl liegt im pytest-Test"
     },
     {
       "id": "t014",

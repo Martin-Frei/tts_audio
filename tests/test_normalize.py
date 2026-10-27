@@ -1,5 +1,5 @@
 from stage_io import load_stage, save_stage
-from normalize import normalize
+from normalize import normalize, normalize_text
 
 RUN_ID = "2026-10-23_0800"
 
@@ -50,3 +50,9 @@ def test_normalize_abort_when_no_items(tmp_path):
 
     assert status == "abort"                  # Prüft, ob bei einer leeren Item-Liste abgebrochen wird.
     assert load_stage(output_path)["reason"] == "no items in input" # Prüft, ob der korrekte Fehlergrund protokolliert wurde.
+
+def test_number_with_period_without_signal_word_stays():
+    """Without a signal word, '55.' before a word stays as digits (loud)."""
+    text = "Er wurde 55. Danach zog er nach Berlin."
+    result = normalize_text(text, [], {})
+    assert result == "Er wurde 55. Danach zog er nach Berlin."
