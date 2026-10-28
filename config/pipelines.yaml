@@ -33,3 +33,22 @@ profiles:
       whitelist: config/rundung_whitelist.json
       lexicon: config/aussprache_lexikon.json
       voice: voices/de_DE-thorsten-high.onnx
+
+  # Phase 2, step by step: the new chain up to classify.
+  # select_items, script and factcheck follow once they read the classify file.
+  news_classify:
+    project: news
+    stages:
+      - fetch
+      - clean
+      - classify
+    params:
+      feeds: config/feeds.yaml
+      categories: config/categories.json
+      classify_prompt: prompts/classify_prompt.md
+      model: gemini-3.5-flash-lite
+      batch_size: 5
+      timeout_ms: 30000
+      attempts: 3
+      temperature: 0.0
+      min_interval_s: 5.0

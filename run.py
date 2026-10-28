@@ -31,13 +31,15 @@ Functions:
     main()                                        command line
 
 Dependencies:
-    pyyaml, stage_io and all stage modules in src/.
+    pyyaml, python-dotenv, stage_io and all stage modules in src/.
+    GEMINI_API_KEY in .env for stages that call Gemini (classify).
 
 Start:
     python run.py --profile news_piper
     python run.py --profile news_piper --from normalize
     python run.py --profile news_piper --from normalize --run 2026-10-26_0800
     python run.py --profile testsatz_piper
+    python run.py --profile news_classify
 """
 
 import argparse
@@ -48,17 +50,19 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from stage_io import load_stage                      # noqa: E402
-from fetch import fetch                              # noqa: E402
-from clean import clean                              # noqa: E402
-from normalize import normalize                      # noqa: E402
-from residue_check import residue_check              # noqa: E402
-from select_items import select_items                # noqa: E402
-from tts_piper import tts_piper                      # noqa: E402
-from postprocess import postprocess                  # noqa: E402
+from stage_io import load_stage                      
+from fetch import fetch                              
+from clean import clean                              
+from classify import classify
+from normalize import normalize                      
+from residue_check import residue_check              
+from select_items import select_items                
+from tts_piper import tts_piper                      
+from postprocess import postprocess                  
 
 logger = logging.getLogger("run")
 
@@ -71,6 +75,10 @@ PROFILES_PATH = Path("config/pipelines.yaml")
 STAGES = {
     "fetch": lambda inp, out, run_id, p: fetch(p["feeds"], out, run_id),
     "clean": lambda inp, out, run_id, p: clean(inp, out, run_id),
+    "classify": lambda inp, out, run_id, p: classify(
+        inp, Path(p["categories"]), Path(p["classify_prompt"]), out, run_id,
+        p["model"], p["batch_size"], p["timeout_ms"], p["attempts"],
+        p["temperature"], p["min_interval_s"]),
     "normalize": lambda inp, out, run_id, p: normalize(inp, out, run_id, p["whitelist"], p["lexicon"]),
     "residue_check": lambda inp, out, run_id, p: residue_check(inp, out, run_id),
     "select_items": lambda inp, out, run_id, p: select_items(inp, out, run_id, p["max_items"]),
@@ -217,6 +225,9 @@ def main():
             if answer.strip().lower() != "j":
                 print("Cancelled.")
                 sys.exit(0)
+
+    # Secrets come from .env, read once by whoever starts the program.
+    load_dotenv()
 
     # Logging belongs to whoever starts the program: here, not in the stages.
     LOGS_DIR.mkdir(exist_ok=True)

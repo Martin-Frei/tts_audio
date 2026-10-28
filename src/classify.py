@@ -204,7 +204,11 @@ def classify(clean_path: Path, categories_path: Path, prompt_path: Path, output_
 
     # 2. classify batch by batch; errors are collected, never stop the loop
     category_ids = {category["id"] for category in categories}
-    client = make_client(timeout_ms, attempts)
+    try:
+        client = make_client(timeout_ms, attempts)
+    except KeyError as error:
+        save_classify(output_path, run_id, "abort", f"missing api key: {error}", [], [], [])
+        return "abort", output_path
     labels = []
     errors = []
     warnings = []  # new
