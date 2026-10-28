@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 
 def is_usable(item):
-    """A question without a teaser is no news. Everything else is kept.
+    """A question without a teaser is no news, and neither is noise. Everything else is kept.
 
     >>> is_usable({"title": "Brand in Beispielstadt", "teaser": None})
     True
@@ -57,12 +57,16 @@ def is_usable(item):
     False
     >>> is_usable({"title": "Wann kommt die Reform?", "teaser": "Die Koalition streitet."})
     True
+    >>> is_usable({"title": "Lottozahlen vom Samstag", "teaser": "1, 7, 12", "category": "noise"})
+    False
     """
+    # classify only marks noise; dropping it is the job of this stage.
+    if item.get("category") == "noise":
+        return False
     # A statement tells something even without a teaser.
     # A question leaves the listener without an answer.
     title = item.get("title") or ""
     return bool(item.get("teaser")) or not title.endswith("?")
-
 
 def pick_newest(items, max_items):
     """Return the newest usable items first; items without a date go last.
@@ -85,7 +89,7 @@ def pick_newest(items, max_items):
     return (dated + undated)[:max_items]
 
 
-def select_items(input_path, output_path, run_id, max_items=20):
+def select_items(input_path, output_path, run_id, max_items=10):
     """Run the stage select_items and report (status, output_path) to run.py."""
     try:
         data = load_stage(input_path)
