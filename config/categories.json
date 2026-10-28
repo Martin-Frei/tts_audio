@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "rule": "Check categories in this order; the first match wins.",
+  "categories": [
+    {
+      "id": "sports",
+      "description": "Sport aller Art: Spiele, Ergebnisse, Wettkämpfe, Vereine, Transfers, Doping und Sportpolitik. Jede Meldung mit Sportbezug gehört hierher, auch wenn sie Justiz, Geld oder Politik berührt.",
+      "not": [],
+      "transition": "Und nun zum Sport."
+    },
+    {
+      "id": "politics_state",
+      "description": "Politik in Deutschland: Bund, Länder und Kommunen, Wahlen, Parteien, Gesetze und Verwaltung. Eine Meldung gehört hierher, sobald im Titel oder Teaser eine deutsche politische Stelle entscheidet oder politisch handelt, etwa beschließt, verabschiedet, verhandelt, empfängt, ankündigt oder abstimmt; auch wenn es um andere Staaten geht. Bestätigen, Mitteilen, Warnen oder Melden zählt nicht.",
+      "not": [
+        "Politik anderer Staaten ohne handelnde deutsche Stelle (-> world)",
+        "Sportpolitik mit Sportbezug (-> sports)"
+      ],
+      "transition": "Und nun zur Politik."
+    },
+    {
+      "id": "national_security",
+      "description": "Sicherheit in Deutschland: Kriminalität, Polizei, Justiz, Unglücke und Katastrophen. Ein Naturereignis in Deutschland gehört hierher, wenn Titel oder Teaser Folgen für Menschen nennen: Tote, Verletzte, Vermisste, Evakuierung oder zerstörte Häuser, Straßen oder Infrastruktur.",
+      "not": [
+        "Ereignisse im Ausland (-> world)",
+        "Naturereignisse ohne Folgen für Menschen (-> environment_climate)"
+      ],
+      "transition": "Und nun zur Sicherheit im Inland."
+    },
+    {
+      "id": "economy_finance",
+      "description": "Produktion, Handel, Märkte, Geld und Unternehmen, inklusive Energie als Wirtschaftsfaktor.",
+      "not": [
+        "Energiepolitik und Energiegesetze (-> politics_state)",
+        "Klimafolgen (-> environment_climate)",
+        "Sanktionen als geopolitisches Instrument (-> world)"
+      ],
+      "transition": "Und nun zur Wirtschaft."
+    },
+    {
+      "id": "technology_digital",
+      "description": "Technische Innovationen, digitale Infrastruktur und deren gesellschaftliche Auswirkungen.",
+      "not": [
+        "Wissenschaftliche Grundlagenforschung (-> knowledge_society)",
+        "Medieninhalte (-> culture_media)"
+      ],
+      "transition": "Und nun zu Technik und Digitalem."
+    },
+    {
+      "id": "knowledge_society",
+      "description": "Bildung, Gesundheit, Wissenschaft, Soziales und das Zusammenleben der Menschen.",
+      "not": [
+        "Kulturprodukte (-> culture_media)",
+        "Kriminalität im Inland (-> national_security)",
+        "Kriminalität im Ausland (-> world)"
+      ],
+      "transition": "Und nun zu Wissen und Gesellschaft."
+    },
+    {
+      "id": "environment_climate",
+      "description": "Natürliche Lebensgrundlagen, Klima und Ökosysteme: Klimawandel, Naturschutz, Artenvielfalt, Wetter, Umweltverschmutzung und Nachhaltigkeit. Ein Naturereignis gehört hierher, wenn es um Ursachen, Verlauf oder ökologische Folgen geht, nicht um Folgen für Menschen.",
+      "not": [
+        "Energiepreise und Energiewirtschaft (-> economy_finance)",
+        "Energiegesetze und Energiepolitik (-> politics_state)",
+        "Naturereignisse mit Toten, Verletzten, Vermissten, Evakuierung oder zerstörten Häusern, Straßen oder Infrastruktur (-> national_security oder world)"
+      ],
+      "transition": "Und nun zu Umwelt und Klima."
+    },
+    {
+      "id": "culture_media",
+      "description": "Kulturelle Produktion, Medieninhalte, Lifestyle und Freizeit.",
+      "not": [
+        "Sport (-> sports)",
+        "Medienpolitik und Regulierung (-> politics_state)",
+        "Gesundheitsfolgen von Lifestyle (-> knowledge_society)"
+      ],
+      "transition": "Und nun zu Kultur und Medien."
+    },
+    {
+      "id": "world",
+      "description": "Ausland: Politik anderer Staaten, Beziehungen zwischen Staaten, Kriege, Krisen, Diplomatie sowie Kriminalität und Katastrophen im Ausland. Eine Meldung gehört hierher, auch wenn die Begegnung in Deutschland stattfindet, solange im Titel oder Teaser keine deutsche Stelle handelt. Ein Naturereignis im Ausland gehört hierher, wenn Titel oder Teaser Folgen für Menschen nennen: Tote, Verletzte, Vermisste, Evakuierung oder zerstörte Häuser, Straßen oder Infrastruktur. Das gilt auch, wenn Deutsche betroffen sind.",
+      "not": [
+        "Sanktionen mit primär wirtschaftlicher Marktwirkung (-> economy_finance)"
+      ],
+      "transition": "Und nun Nachrichten aus aller Welt."
+    },
+    {
+      "id": "noise",
+      "description": "Kein Nachrichteninhalt: Lottozahlen, Lotteriegewinner, Werbung und Aufforderungen zum Mitmachen, etwa Gewinnspiele, Umfragen, Newsletter oder App-Downloads.",
+      "not": [
+        "Echte Meldungen, die schwer einzuordnen sind (-> passende Rubrik)"
+      ],
+      "transition": null
+    }
+  ]
+}
