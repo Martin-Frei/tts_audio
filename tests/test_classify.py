@@ -1,4 +1,4 @@
-from src.classify import load_json, load_text, validate_batch
+from src.classify import filter_evidence, load_json, load_text, save_classify, validate_batch
 
 
 def test_load_json_umlauts(tmp_path):
@@ -60,7 +60,34 @@ def test_validate_batch_no_evidence():
     assert validate_batch(BATCH, results, CATEGORIES) == [{"id": "m002", "check": "no_evidence"}]
 
 
-def test_validate_batch_evidence_not_found():
+def test_filter_evidence_ok_unchanged():
+    cleaned, warnings = filter_evidence(BATCH, ok_results())
+    assert cleaned == ok_results()
+    assert warnings == []
+
+
+def test_filter_evidence_drops_invalid_word():
     results = ok_results()
     results[0]["evidence"] = ["Tote", "Dammbruch"]
-    assert validate_batch(BATCH, results, CATEGORIES) == [{"id": "m001", "check": "evidence_not_found", "value": "Dammbruch"}]
+    cleaned, warnings = filter_evidence(BATCH, results)
+    assert cleaned[0]["evidence"] == ["Tote"]
+    assert warnings == [{"id": "m001", "check": "evidence_dropped", "value": "Dammbruch"}]
+
+
+def test_filter_evidence_only_invalid_word_leads_to_no_evidence():
+    results = ok_results()
+    results[1]["evidence"] = ["Tor"]
+    cleaned, _ = filter_evidence(BATCH, results)
+    assert validate_batch(BATCH, cleaned, CATEGORIES) == [{"id": "m002", "check": "no_evidence"}]
+
+
+def test_save_classify(tmp_path):
+    path = tmp_path / "run_classify.json"
+    items = [{"id": "m001", "title": "Brücke gesperrt", "category": "national_security", "evidence": ["gesperrt"]}]
+    save_classify(path, "2026-10-28_1100", "ok", None, items, [], [])
+    text = path.read_text(encoding="utf-8")
+    assert "Brücke" in text
+    data = load_json(path)
+    assert data["stage"] == "classify"
+    assert data["status"] == "ok"
+    assert data["items"] == items
