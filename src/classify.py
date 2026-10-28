@@ -1,15 +1,62 @@
+"""Stage classify: give every item exactly one category, with evidence words.
 
+Reads the _clean.json and writes the _classify.json. classify only marks;
+it never drops an item (that is select_items) and never changes a title
+or teaser: the LLM returns only id, category and evidence, the code copies
+each item unchanged and adds the label.
 
+Workflow (classify):
+    1. Receive paths and parameters from run.py (profile news_classify).
+    2. Load items, categories (config/categories.json) and prompt template.
+       Unreadable input or no items: status "abort" with a reason.
+    3. Split the items into batches of batch_size. For each batch, with
+       min_interval_s pause between batches (free tier: 15 requests/min):
+       build the prompt (id, title, teaser; categories without transition),
+       call Gemini with a response schema, parse the JSON.
+    4. filter_evidence drops evidence words that are not in title or teaser
+       (warning). validate_batch checks ids, category and that at least one
+       evidence word is left (error).
+    5. Errors are collected over all batches; LLM errors (503, 429 after
+       retries, no text) too. Any error: status "abort" at the end.
+    6. Write the file with save_classify, return (status, output_path).
 
-from pathlib import Path
+Functions:
+    load_json(path)                          JSON file as dictionary
+    load_text(path)                          text file, e.g. the prompt
+    split_batches(items, batch_size)         consecutive batches
+    format_categories(categories)            numbered category list for the prompt
+    format_items(batch)                      one line per item for the prompt
+    build_prompt(template, categories, batch) prompt with both blocks inserted
+    evidence_found(word, item)               word in title or teaser, case-insensitive
+    filter_evidence(batch, results)          drop invalid evidence, return warnings
+    validate_batch(batch, results, category_ids) errors of one answer
+    parse_response(text)                     JSON text to list of dictionaries
+    save_classify(...)                       write the file with metadata
+    classify(...)                            run the stage, return (status, path)
+
+Dependencies:
+    llm (own module), pydantic; standard library: json, time, datetime.
+
+Start and test:
+    python run.py --profile news_classify
+    python -m pytest src\\classify.py tests\\test_classify.py -v
+"""
+
 import json
-import os
 import time
-
 from datetime import datetime, timezone
-from google import genai
-from google.genai import types
+from pathlib import Path
+
 from pydantic import BaseModel
+
+from llm import call_llm, make_client
+
+
+class Classification(BaseModel):
+    """Shape of one LLM answer entry; enforced by the API as response schema."""
+    id: str
+    category: str
+    evidence: list[str]
 
 
 def load_json(path: Path) -> dict:
@@ -25,7 +72,7 @@ def load_text(path: Path) -> str:
 
 def split_batches(items: list[dict], batch_size: int) -> list[list[dict]]:
     """Split items into consecutive batches; the last batch may be smaller.
-    
+
     >>> split_batches([1, 2, 3, 4, 5], 2)
     [[1, 2], [3, 4], [5]]
     >>> split_batches([], 10)
@@ -99,6 +146,26 @@ def evidence_found(word: str, item: dict) -> bool:
     return word.casefold() in text.casefold()
 
 
+def filter_evidence(batch: list[dict], results: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Drop evidence words not found in the source item; return cleaned results and warnings."""
+    sent = {item["id"]: item for item in batch}
+    cleaned = []
+    warnings = []
+    for result in results:
+        item = sent.get(result["id"])
+        if item is None:
+            cleaned.append(result)  # unknown id is reported by validate_batch
+            continue
+        kept = []
+        for word in result["evidence"]:
+            if evidence_found(word, item):
+                kept.append(word)
+            else:
+                warnings.append({"id": result["id"], "check": "evidence_dropped", "value": word})
+        cleaned.append({**result, "evidence": kept})
+    return cleaned, warnings
+
+
 def validate_batch(batch: list[dict], results: list[dict], category_ids: set[str]) -> list[dict]:
     """Check one LLM answer against its batch; return a list of errors, empty if all is fine."""
     errors = []
@@ -123,40 +190,6 @@ def validate_batch(batch: list[dict], results: list[dict], category_ids: set[str
             errors.append({"id": item_id, "check": "no_evidence"})
 
     return errors
-
-
-class Classification(BaseModel):
-    """Shape of one LLM answer entry; enforced by the API as response schema."""
-    id: str
-    category: str
-    evidence: list[str]
-
-
-def make_client(timeout_ms: int, attempts: int) -> genai.Client:
-    """Create a Gemini client with timeout and limited retries; key from GEMINI_API_KEY."""
-    return genai.Client(
-        api_key=os.environ["GEMINI_API_KEY"],
-        http_options=types.HttpOptions(
-            timeout=timeout_ms,
-            retry_options=types.HttpRetryOptions(attempts=attempts),
-        ),
-    )
-
-
-def call_llm(client: genai.Client, model: str, prompt: str, temperature: float) -> str:
-    """Send one prompt and return the raw JSON text of the answer."""
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=list[Classification],
-            temperature=temperature,
-        ),
-    )
-    if response.text is None:
-        raise ValueError("model returned no text")
-    return response.text
 
 
 def parse_response(text: str) -> list[dict]:
@@ -186,6 +219,7 @@ def save_classify(path: Path, run_id: str, status: str, reason: str | None,
     }
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
+
 def classify(clean_path: Path, categories_path: Path, prompt_path: Path, output_path: Path,
              run_id: str, model: str, batch_size: int, timeout_ms: int, attempts: int,
              temperature: float, min_interval_s: float) -> tuple[str, Path]:
@@ -196,10 +230,10 @@ def classify(clean_path: Path, categories_path: Path, prompt_path: Path, output_
         categories = load_json(categories_path)["categories"]
         template = load_text(prompt_path)
     except (OSError, ValueError, KeyError) as error:
-        save_classify(output_path, run_id, "abort", f"input not readable: {error}", [], [], [])  # new
+        save_classify(output_path, run_id, "abort", f"input not readable: {error}", [], [], [])
         return "abort", output_path
     if not items:
-        save_classify(output_path, run_id, "abort", "no items", [], [], [])  # new
+        save_classify(output_path, run_id, "abort", "no items", [], [], [])
         return "abort", output_path
 
     # 2. classify batch by batch; errors are collected, never stop the loop
@@ -211,18 +245,18 @@ def classify(clean_path: Path, categories_path: Path, prompt_path: Path, output_
         return "abort", output_path
     labels = []
     errors = []
-    warnings = []  # new
+    warnings = []
     for number, batch in enumerate(split_batches(items, batch_size), start=1):
         if number > 1:
             time.sleep(min_interval_s)
         try:
             prompt = build_prompt(template, categories, batch)
-            results = parse_response(call_llm(client, model, prompt, temperature))  # new
+            results = parse_response(call_llm(client, model, prompt, temperature, list[Classification]))
         except Exception as error:
             errors.append({"batch": number, "check": "llm_error", "value": str(error)})
             continue
-        results, dropped = filter_evidence(batch, results)  # new
-        warnings.extend(dropped)  # new
+        results, dropped = filter_evidence(batch, results)
+        warnings.extend(dropped)
         errors.extend(validate_batch(batch, results, category_ids))
         labels.extend(results)
 
@@ -236,25 +270,5 @@ def classify(clean_path: Path, categories_path: Path, prompt_path: Path, output_
     # 4. abort after all batches if any error was collected
     status = "abort" if errors else "ok"
     reason = f"{len(errors)} errors" if errors else None
-    save_classify(output_path, run_id, status, reason, classified, errors, warnings)  # new
+    save_classify(output_path, run_id, status, reason, classified, errors, warnings)
     return status, output_path
-
-
-def filter_evidence(batch: list[dict], results: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Drop evidence words not found in the source item; return cleaned results and warnings."""
-    sent = {item["id"]: item for item in batch}
-    cleaned = []
-    warnings = []
-    for result in results:
-        item = sent.get(result["id"])
-        if item is None:
-            cleaned.append(result)  # unknown id is reported by validate_batch
-            continue
-        kept = []
-        for word in result["evidence"]:
-            if evidence_found(word, item):
-                kept.append(word)
-            else:
-                warnings.append({"id": result["id"], "check": "evidence_dropped", "value": word})
-        cleaned.append({**result, "evidence": kept})
-    return cleaned, warnings
