@@ -1,0 +1,10 @@
+{
+  "greeting": "Guten Tag, hier sind die wichtigsten Nachrichten.",
+  "ai_note": "Dieses Briefing wurde mit KI erstellt.",
+  "closing": "Das waren die Nachrichten. Bis zum nächsten Mal.",
+  "source_names": {
+    "tagesschau": "Die Tagesschau berichtet.",
+    "handelsblatt": "Das Handelsblatt berichtet.",
+    "t-online": "T-Online berichtet."
+   }
+}

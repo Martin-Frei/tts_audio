@@ -34,8 +34,8 @@ profiles:
       lexicon: config/aussprache_lexikon.json
       voice: voices/de_DE-thorsten-high.onnx
 
-  # Phase 2, step by step: the new chain up to classify.
-  # select_items, script and factcheck follow once they read the classify file.
+    # Phase 2, step by step: the new chain up to factcheck.
+  # factcheck_apply, normalize and tts follow.
   news_classify:
     project: news
     stages:
@@ -43,6 +43,8 @@ profiles:
       - clean
       - classify
       - select_items
+      - script
+      - factcheck
     params:
       feeds: config/feeds.yaml
       categories: config/categories.json
@@ -54,3 +56,11 @@ profiles:
       temperature: 0.0
       min_interval_s: 5.0
       max_items: 10
+      script_prompt: prompts/script_prompt.md
+      script_texts: config/script_texts.json
+      max_words: 20
+      factcheck_prompt: prompts/factcheck_prompt.md
+      factcheck_provider: lmstudio
+      factcheck_model: qwen/qwen3.6-35b-a3b
+      lmstudio_url: http://localhost:1234/v1/chat/completions
+      factcheck_timeout_ms: 900000

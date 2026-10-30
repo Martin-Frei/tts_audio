@@ -62,7 +62,9 @@ from normalize import normalize
 from residue_check import residue_check              
 from select_items import select_items                
 from tts_piper import tts_piper                      
-from postprocess import postprocess                  
+from postprocess import postprocess     
+from script import script     
+from factcheck import factcheck        
 
 logger = logging.getLogger("run")
 
@@ -75,15 +77,14 @@ PROFILES_PATH = Path("config/pipelines.yaml")
 STAGES = {
     "fetch": lambda inp, out, run_id, p: fetch(p["feeds"], out, run_id),
     "clean": lambda inp, out, run_id, p: clean(inp, out, run_id),
-    "classify": lambda inp, out, run_id, p: classify(
-        inp, Path(p["categories"]), Path(p["classify_prompt"]), out, run_id,
-        p["model"], p["batch_size"], p["timeout_ms"], p["attempts"],
-        p["temperature"], p["min_interval_s"]),
+    "classify": lambda inp, out, run_id, p: classify(inp, Path(p["categories"]), Path(p["classify_prompt"]), out, run_id, p["model"], p["batch_size"], p["timeout_ms"], p["attempts"], p["temperature"], p["min_interval_s"]),
     "normalize": lambda inp, out, run_id, p: normalize(inp, out, run_id, p["whitelist"], p["lexicon"]),
     "residue_check": lambda inp, out, run_id, p: residue_check(inp, out, run_id),
     "select_items": lambda inp, out, run_id, p: select_items(inp, out, run_id, p["max_items"]),
     "tts_piper": lambda inp, out, run_id, p: tts_piper(inp, out, run_id, p["voice"]),
     "postprocess": lambda inp, out, run_id, p: postprocess(inp, out, run_id),
+    "script": lambda inp, out, run_id, p: script(inp, Path(p["categories"]), Path(p["script_prompt"]), Path(p["script_texts"]), out, run_id, p["model"], p["timeout_ms"], p["attempts"], p["temperature"], p["max_words"]),
+    "factcheck": lambda inp, out, run_id, p: factcheck(inp, Path(p["factcheck_prompt"]), out, run_id, p["factcheck_provider"], p["factcheck_model"], p["lmstudio_url"], p["factcheck_timeout_ms"], p["attempts"], p["temperature"]),   
 }
 
 # Stages that only check: their file holds findings, not items.
