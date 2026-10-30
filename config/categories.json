@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version":3,
   "rule": "Check categories in this order; the first match wins.",
   "briefing_order": [
     "politics_state",
@@ -13,6 +13,14 @@
     "sports"
   ],
   "categories": [
+    {
+      "id": "noise",
+      "description": "Kein Nachrichteninhalt: Lottozahlen, Lotteriegewinner, Werbung und Aufforderungen zum Mitmachen, etwa Gewinnspiele, Umfragen, Newsletter oder App-Downloads.",
+      "not": [
+        "Echte Meldungen, die schwer einzuordnen sind (-> passende Rubrik)"
+      ],
+      "transition": null
+    },
     {
       "id": "sports",
       "description": "Sport aller Art: Spiele, Ergebnisse, Wettkämpfe, Vereine, Transfers, Doping und Sportpolitik. Jede Meldung mit Sportbezug gehört hierher, auch wenn sie Justiz, Geld oder Politik berührt.",
@@ -93,15 +101,8 @@
         "Sanktionen mit primär wirtschaftlicher Marktwirkung (-> economy_finance)"
       ],
       "transition": "Und nun Nachrichten aus aller Welt."
-    },
-    {
-      "id": "noise",
-      "description": "Kein Nachrichteninhalt: Lottozahlen, Lotteriegewinner, Werbung und Aufforderungen zum Mitmachen, etwa Gewinnspiele, Umfragen, Newsletter oder App-Downloads.",
-      "not": [
-        "Echte Meldungen, die schwer einzuordnen sind (-> passende Rubrik)"
-      ],
-      "transition": null
     }
+    
   ]
   
 }
