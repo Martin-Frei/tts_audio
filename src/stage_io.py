@@ -36,7 +36,7 @@ def load_stage(path):
         return json.load(file)                          # Liest den JSON-Inhalt ein und gibt ihn als Dictionary zurück
 
 
-def save_stage(path, run_id, stage, items, status, reason=None):
+def save_stage(path, run_id, stage, items, status, reason=None, key="items"):
     """Write a stage file: metadata first, then the items.
 
     created is set here, in UTC. The parent folder is created if needed,
@@ -50,7 +50,7 @@ def save_stage(path, run_id, stage, items, status, reason=None):
         "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # Setzt den aktuellen UTC-Zeitstempel
         "status": status,
         "reason": reason,
-        "items": items,
+        key: items,
     }
     with path.open("w", encoding="utf-8") as file:              # Öffnet die Zieldatei im Schreibmodus mit UTF-8-Codierung
         json.dump(data, file, ensure_ascii=False, indent=2)     # Schreibt das strukturierte Dictionary formatiert als JSON

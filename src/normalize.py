@@ -492,12 +492,11 @@ def load_config(path):
         return json.load(file)                          # Liest den JSON-Inhalt ein, wandelt ihn in Python-Datenstrukturen um und gibt ihn zurück
 
 
-def normalize_item(item, whitelist, lexicon):
-    """Return a copy of one item with title and teaser made speakable."""
-    new_item = dict(item)                                                   # Erstellt eine Kopie des Datensatzes, um das Original unverändert zu lassen.
-    new_item["title"] = normalize_text(item["title"], whitelist, lexicon)   # Wendet die Text-Normalisierung auf den Titel an.
-    new_item["teaser"] = normalize_text(item["teaser"], whitelist, lexicon) # Wendet die Text-Normalisierung auf den Teaser an.
-    return new_item                                                         # Gibt das verarbeitete Item zurück.
+def normalize_sentence(sentence, whitelist, lexicon):
+    """Return a copy of one sentence with its text made speakable."""
+    new_sentence = dict(sentence)
+    new_sentence["text"] = normalize_text(sentence["text"], whitelist, lexicon)
+    return new_sentence                                                         # Gibt das verarbeitete Item zurück.
 
 
 def normalize(input_path, output_path, run_id, whitelist_path, lexicon_path):
@@ -508,20 +507,20 @@ def normalize(input_path, output_path, run_id, whitelist_path, lexicon_path):
         lexicon = load_config(lexicon_path)                                     # Lädt das Aussprachelexikon (Abkürzungen, Päpste,...) aus JSON
     except (FileNotFoundError, json.JSONDecodeError) as error:                  # Fängt Fehler beim Laden ab (z.B. Datei fehlt oder fehlerhaftes JSON)
         reason = f"input not readable: {error}"                                 # Erstellt eine präzise Fehlerbeschreibung
-        save_stage(output_path, run_id, "normalize", [], "abort", reason)       # Speichert den Abbruchstatus im System-Protokoll 
+        save_stage(output_path, run_id, "normalize", [], "abort", reason, key="sentences")       # Speichert den Abbruchstatus im System-Protokoll 
         logging.error("normalize aborted: %s", reason)                          # Schreibt einen entsprechenden Fehlereintrag ins Log
         return "abort", output_path                                             # Signalisiert dem Pipeline-Runner den sofortigen Abbruch
 
-    if not data["items"]:                                                       # Prüft, ob die geladene JSON-Struktur leer ist (keine Items vorhanden)
-        reason = "no items in input"                                            # Setzt den Grund für den Abbruch
-        save_stage(output_path, run_id, "normalize", [], "abort", reason)       # Protokolliert den leeren Input als Abbruch
+    if not data.get("sentences"):                                               # Prüft, ob die geladene JSON-Struktur leer ist (keine Items vorhanden)
+        reason = "no sentences in input"                                        # Setzt den Grund für den Abbruch
+        save_stage(output_path, run_id, "normalize", [], "abort", reason, key="sentences")       # Protokolliert den leeren Input als Abbruch
         logging.error("normalize aborted: %s", reason)                          # Loggt den Fehler
         return "abort", output_path                                             # Gibt den Abbruchstatus an den Runner zurück
 
-    items = []                                                                  # Initialisiert eine leere Liste für die fertig normalisierten Datensätze
-    for item in data["items"]:                                                  # Durchläuft alle einzelnen Artikel/Items nacheinander
-        items.append(normalize_item(item, whitelist, lexicon))                  # Normalisiert das Item und fügt es zur Ergebnisliste hinzu
+    sentences = []                                                              # Initialisiert eine leere Liste für die fertig normalisierten Datensätze
+    for sentence in data["sentences"]:                                          # Durchläuft alle einzelnen Artikel/Items nacheinander
+        sentences.append(normalize_sentence(sentence, whitelist, lexicon))      # Normalisiert das Item und fügt es zur Ergebnisliste hinzu
 
-    save_stage(output_path, run_id, "normalize", items, "ok")                   # Speichert die erfolgreich verarbeiteten Items mit Status "ok".
-    logging.info("normalize: %d items written to %s", len(items), output_path)  # Loggt die erfolgreiche Anzahl geschriebener Einträge
+    save_stage(output_path, run_id, "normalize", sentences, "ok", key="sentences")  # Speichert die erfolgreich verarbeiteten Items mit Status "ok".
+    logging.info("normalize: %d sentences written to %s", len(sentences), output_path)  # Loggt die erfolgreiche Anzahl geschriebener Einträge
     return "ok", output_path                                                    # Gibt den Erfolgsstatus und den Ausgabepfad an den Runner zurück
