@@ -43,6 +43,7 @@ import json
 import logging 
 import re 
 from stage_io import load_stage, save_stage
+from pathlib import Path
 
 
 logger = logging.getLogger(__name__)
@@ -98,20 +99,29 @@ def residue_check(input_path, output_path, run_id):
         data = load_stage(input_path)                                           # Lädt die normalisierte Stufen-Datei
     except (FileNotFoundError, json.JSONDecodeError) as error:                  # wenn File not found
         reason = f"input not readable: {error}"                                 # reason ist eien Meldung mit Fehlermeldung
-        save_stage(output_path, run_id, "residue_check", [], "abort", reason)   # lauf speichern mit status abort und reason Meldung 
+        save_stage(output_path, run_id, "residue_check", [], "abort", reason, key="findings")   # lauf speichern mit status abort und reason Meldung 
         return "abort", output_path                                             # Beenden mit status abort udn den Output pfad
 
+    if data["status"] != "ok":                                                  # Eingabe von normalize nicht freigegeben
+        reason = f"normalize not released: {Path(input_path).name} has status {data['status']}"  # Grund mit Dateiname und Status
+        save_stage(output_path, run_id, "residue_check", [], "abort", reason, key="findings")   # Abbruch mit leerer Fundliste speichern
+        return "abort", output_path                                             # Abbruch an run.py melden
+
+    if not data.get("sentences"):                                               # keine Sätze in der Eingabe (fehlt oder leer)
+        reason = "no sentences in input"                                        # Grund für den Abbruch
+        save_stage(output_path, run_id, "residue_check", [], "abort", reason, key="findings")   # Abbruch speichern statt stilles OK
+        return "abort", output_path                                             # Abbruch an run.py melden
+
     findings = []                                                               # leere Liste findings initialisieren
-    for item in data["items"]:                                                  # iteriert duch data 
-        for field in ("title", "teaser"):                                       # nummt nur title und teaser asu data
-            for found in find_residues(item.get(field)):                        # found erhält alle find_residues Werte
-                findings.append({"id": item["id"], "field": field, "found": found}) # finding wird id, fild (title od. teaser) und der Fund aus found angehängt
+    for sentence in data["sentences"]:                                          # iteriert duch data 
+        for found in find_residues(sentence["text"]):                           # found erhält alle find_residues Werte
+            findings.append({"id": sentence["id"], "found": found})            # finding wird id, fild (title od. teaser) und der Fund aus found angehängt
 
     if findings:
         status, reason = "abort", f"{len(findings)} residues found"             # Setzt den Status auf "abort", wenn Rückstände entdeckt wurde
     else:
         status, reason = "ok", None                                             # Setzt den Status auf "ok", wenn keine Rückstände gefunden wurden
 
-    save_stage(output_path, run_id, "residue_check", findings, status, reason)  # Speichert die Ergebnisse in der Stufen-Datei
+    save_stage(output_path, run_id, "residue_check", findings, status, reason, key="findings")  # Speichert die Ergebnisse in der Stufen-Datei
     logger.info("residue_check: %d findings, status %s", len(findings), status)
     return status, output_path                                                  # Gibt den Endstatus und den Ausgabepfad an den Runner zurück
