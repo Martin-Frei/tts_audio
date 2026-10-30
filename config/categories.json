@@ -15,7 +15,7 @@
   "categories": [
     {
       "id": "noise",
-      "description": "Kein Nachrichteninhalt: Lottozahlen, Lotteriegewinner, Werbung und Aufforderungen zum Mitmachen, etwa Gewinnspiele, Umfragen, Newsletter oder App-Downloads.",
+            "description": "Kein Nachrichteninhalt: Lottozahlen, Lotteriegewinner, Werbung, Aufforderungen zum Mitmachen wie Gewinnspiele, Umfragen, Newsletter oder App-Downloads, sowie Ratgeber und Service-Texte. Ein Ratgeber erklärt dem Leser, was er selbst tun kann, statt über ein Ereignis zu berichten; typische Zeichen in Titel oder Teaser sind: Tipps, Was hilft, Was tun, So gelingt, Woran das liegen kann.",
       "not": [
         "Echte Meldungen, die schwer einzuordnen sind (-> passende Rubrik)"
       ],
