@@ -45,6 +45,7 @@ profiles:
       - select_items
       - script
       - factcheck
+      - factcheck_apply
     params:
       feeds: config/feeds.yaml
       categories: config/categories.json
