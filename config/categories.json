@@ -1,6 +1,17 @@
 {
-  "version": 1,
+  "version": 2,
   "rule": "Check categories in this order; the first match wins.",
+  "briefing_order": [
+    "politics_state",
+    "world",
+    "economy_finance",
+    "national_security",
+    "knowledge_society",
+    "technology_digital",
+    "environment_climate",
+    "culture_media",
+    "sports"
+  ],
   "categories": [
     {
       "id": "sports",
@@ -92,4 +103,5 @@
       "transition": null
     }
   ]
+  
 }
