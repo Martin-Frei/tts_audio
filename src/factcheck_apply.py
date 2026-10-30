@@ -10,7 +10,8 @@ Workflow (factcheck_apply):
     2. If a reviewed file lies next to the input, use it; otherwise the
        factcheck file. Its status must be "ok"; an unreviewed stop never
        passes this stage.
-    3. dropped_items: every item with at least one "nicht_belegt" sentence.
+    3. dropped_items: every item with at least one sentence judged
+        "nicht_belegt" or "widerspricht" (DROP_VERDICTS).
     4. remove_items: all lines of these items, source line and sentences.
     5. remove_orphan_transitions: a transition stays only if the next line
        belongs to an item. Order matters: items first, then transitions.
@@ -40,6 +41,9 @@ from pathlib import Path
 from classify import load_json
 
 
+DROP_VERDICTS = {"nicht_belegt", "widerspricht"}
+
+
 def reviewed_path(input_path: Path) -> Path:
     """Return the path of the reviewed factcheck file next to the input.
 
@@ -54,7 +58,7 @@ def dropped_items(verdicts: list[dict], sentences: list[dict]) -> list[str]:
     by_id = {sentence["id"]: sentence for sentence in sentences}
     dropped = []
     for verdict in verdicts:
-        if verdict["verdict"] == "nicht_belegt":
+        if verdict["verdict"] in DROP_VERDICTS:
             item = by_id[verdict["id"]]["item"]
             if item not in dropped:
                 dropped.append(item)
@@ -129,7 +133,7 @@ def factcheck_apply(input_path: Path, output_path: Path, run_id: str) -> tuple[s
     by_id = {sentence["id"]: sentence for sentence in sentences}
     removed = [{"item": item,
                 "reasons": [verdict["reason"] for verdict in verdicts
-                            if verdict["verdict"] == "nicht_belegt" and by_id[verdict["id"]]["item"] == item]}
+                            if verdict["verdict"] in DROP_VERDICTS and by_id[verdict["id"]]["item"] == item]}
                for item in dropped]
     save_apply(output_path, run_id, "ok", None, source.name, removed, remaining, items)
     return "ok", output_path
