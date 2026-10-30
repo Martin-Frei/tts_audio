@@ -1,12 +1,59 @@
-import re
-from pydantic import BaseModel
+"""Stage factcheck: judge every spoken content sentence against its own source.
+
+Reads the _script.json (sentences and source items) and writes the
+_factcheck.json. factcheck only judges; it never changes or removes a
+sentence (that is factcheck_apply). Sentences and items are passed on
+unchanged, so factcheck_apply reads exactly the script that was checked.
+
+Workflow (factcheck):
+    1. Receive paths and parameters from run.py (profile news_classify).
+    2. Load sentences, items and prompt. Only kind "content" is judged;
+       greeting, transitions, source lines and AI note come from code.
+    3. One call with every sentence and its own source, to the provider
+       named in the profile: lmstudio (local model) or gemini.
+    4. validate_verdicts: every sentence exactly once, only known verdicts.
+    5. apply_number_check: a number in the sentence that is missing in the
+       source turns "belegt" into "nicht_belegt" (code tightens, never loosens).
+    6. decide_status: one "widerspricht", or stop_at_unsupported
+       "nicht_belegt", stops the run for a manual review.
+    7. Write the file with save_factcheck, return (status, output_path).
+
+Functions:
+    extract_numbers(text)                         numbers as written
+    missing_numbers(sentence, item)               numbers not found in the source
+    format_factcheck_input(sentences, items_by_id) sentence plus its own source
+    validate_verdicts(content_ids, verdicts)      errors of the answer
+    apply_number_check(sentences, items_by_id, verdicts) verdicts tightened by code
+    decide_status(verdicts, stop_at_unsupported)  (status, reason)
+    save_factcheck(...)                           write the file with metadata
+    factcheck(...)                                run the stage, return (status, path)
+
+Dependencies:
+    llm and classify (own modules), pydantic; standard library: re, json, datetime.
+
+Start and test:
+    python run.py --profile news_classify --from factcheck --run <run_id>
+    python -m pytest src\\factcheck.py tests\\test_factcheck.py -v
+"""
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from classify import load_json, load_text, parse_response
 from llm import call_llm, call_lmstudio, make_client
+
+VERDICTS = {"belegt", "nicht_belegt", "widerspricht"}
+
+
+class Verdict(BaseModel):
+    """Shape of one LLM answer entry: the verdict for one sentence."""
+    id: str
+    verdict: str
+    reason: str
 
 
 def extract_numbers(text: str) -> list[str]:
@@ -28,16 +75,6 @@ def missing_numbers(sentence: str, item: dict) -> list[str]:
     source = (item["title"] or "") + " " + (item["teaser"] or "")
     source_numbers = set(extract_numbers(source))
     return [number for number in extract_numbers(sentence) if number not in source_numbers]
-
-
-VERDICTS = {"belegt", "nicht_belegt", "widerspricht"}
-
-
-class Verdict(BaseModel):
-    """Shape of one LLM answer entry: the verdict for one sentence."""
-    id: str
-    verdict: str
-    reason: str
 
 
 def format_factcheck_input(sentences: list[dict], items_by_id: dict[str, dict]) -> str:
@@ -90,21 +127,23 @@ def apply_number_check(sentences: list[dict], items_by_id: dict[str, dict], verd
     return checked
 
 
-def decide_status(verdicts: list[dict]) -> tuple[str, str | None]:
-    """One contradiction or two unsupported sentences stop the run for a manual review.
+def decide_status(verdicts: list[dict], stop_at_unsupported: int) -> tuple[str, str | None]:
+    """One contradiction, or stop_at_unsupported unsupported sentences, stop the run for a manual review.
 
-    >>> decide_status([{"id": "s003", "verdict": "belegt"}, {"id": "s006", "verdict": "nicht_belegt"}])
+    >>> decide_status([{"id": "s003", "verdict": "belegt"}, {"id": "s006", "verdict": "nicht_belegt"}], 2)
     ('ok', None)
-    >>> decide_status([{"id": "s006", "verdict": "nicht_belegt"}, {"id": "s031", "verdict": "nicht_belegt"}])
+    >>> decide_status([{"id": "s006", "verdict": "nicht_belegt"}, {"id": "s031", "verdict": "nicht_belegt"}], 2)
     ('abort', "manual review needed, not supported: ['s006', 's031']")
-    >>> decide_status([{"id": "s015", "verdict": "widerspricht"}])
+    >>> decide_status([{"id": "s006", "verdict": "nicht_belegt"}, {"id": "s031", "verdict": "nicht_belegt"}], 3)
+    ('ok', None)
+    >>> decide_status([{"id": "s015", "verdict": "widerspricht"}], 3)
     ('abort', "contradicts source: ['s015']")
     """
     contradicted = [verdict["id"] for verdict in verdicts if verdict["verdict"] == "widerspricht"]
     unsupported = [verdict["id"] for verdict in verdicts if verdict["verdict"] == "nicht_belegt"]
     if contradicted:
         return "abort", f"contradicts source: {contradicted}"
-    if len(unsupported) >= 2:
+    if len(unsupported) >= stop_at_unsupported:
         return "abort", f"manual review needed, not supported: {unsupported}"
     return "ok", None
 
@@ -128,7 +167,7 @@ def save_factcheck(path: Path, run_id: str, status: str, reason: str | None, ver
 
 def factcheck(input_path: Path, prompt_path: Path, output_path: Path, run_id: str,
               provider: str, model: str, url: str, timeout_ms: int, attempts: int,
-              temperature: float) -> tuple[str, Path]:
+              temperature: float, stop_at_unsupported: int) -> tuple[str, Path]:
     """Judge every content sentence against its own source; the code checks numbers on top."""
     # 1. load script, sources and prompt; old script files without items abort here
     try:
@@ -163,7 +202,7 @@ def factcheck(input_path: Path, prompt_path: Path, output_path: Path, run_id: st
         return "abort", output_path
     verdicts = apply_number_check(content, items_by_id, answer)
 
-    # 4. one contradiction or two unsupported sentences: manual review
-    status, reason = decide_status(verdicts)
+    # 4. one contradiction, or stop_at_unsupported unsupported sentences: manual review
+    status, reason = decide_status(verdicts, stop_at_unsupported)
     save_factcheck(output_path, run_id, status, reason, verdicts, [], sentences, items)
     return status, output_path

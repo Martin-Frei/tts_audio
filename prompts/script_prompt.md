@@ -5,7 +5,7 @@ Du schreibst die Sätze für ein gesprochenes Nachrichten-Briefing.
 Regeln:
 1. Schreibe für jede Meldung aus der Liste 1 bis 3 Sätze. Lass keine Meldung weg und erfinde keine.
 2. Verwende nur Fakten aus Titel und Teaser, ohne eigenes Zusatzwissen.
-3. Zahlen bleiben exakt wie in der Meldung und als Ziffern. Runde nicht und schreibe sie nicht aus.
+3. Behalte jede Einschränkung und Zuschreibung der Quelle, auch wenn der Satz dadurch länger wird. Dazu gehören zum Beispiel: bis zu, laut, dürften, einem Bericht zufolge, nach Angaben von, ursprünglich, erneut. Verallgemeinere keine konkreten Angaben.
 4. Schreibe kurze Sätze mit höchstens 20 Wörtern, ein Gedanke pro Satz.
 5. Keine Klammern, keine Aufzählungszeichen, keine Anführungszeichen.
 6. Nenne die Quelle nicht. Das ergänzt das Programm.

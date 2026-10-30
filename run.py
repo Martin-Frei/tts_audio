@@ -84,7 +84,7 @@ STAGES = {
     "tts_piper": lambda inp, out, run_id, p: tts_piper(inp, out, run_id, p["voice"]),
     "postprocess": lambda inp, out, run_id, p: postprocess(inp, out, run_id),
     "script": lambda inp, out, run_id, p: script(inp, Path(p["categories"]), Path(p["script_prompt"]), Path(p["script_texts"]), out, run_id, p["model"], p["timeout_ms"], p["attempts"], p["temperature"], p["max_words"]),
-    "factcheck": lambda inp, out, run_id, p: factcheck(inp, Path(p["factcheck_prompt"]), out, run_id, p["factcheck_provider"], p["factcheck_model"], p["lmstudio_url"], p["factcheck_timeout_ms"], p["attempts"], p["temperature"]),   
+    "factcheck": lambda inp, out, run_id, p: factcheck(inp, Path(p["factcheck_prompt"]), out, run_id, p["factcheck_provider"], p["factcheck_model"], p["lmstudio_url"], p["factcheck_timeout_ms"], p["attempts"], p["temperature"], p["stop_at_unsupported"]),   
 }
 
 # Stages that only check: their file holds findings, not items.
