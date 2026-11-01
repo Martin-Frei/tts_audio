@@ -51,6 +51,7 @@ logger = logging.getLogger(__name__)
 
 # Target loudness for podcasts. LUFS measures loudness as the ear hears it.
 TARGET_LUFS = -16                               # Ziel Lautstärke für mp3
+PAUSE_S = 0.7                                   # Sekunden Stille zwischen zwei Segmenten
 
 # Two soft tones, high to lower (variant A, chosen by ear on 2026-10-26),
 # 0.3 s silence before and after, so the gong does not stick to the voice.
@@ -88,6 +89,17 @@ def make_gong(gong_path):
          "-ar", "22050", "-ac", "1", str(gong_path)],               # Setzt Abtastrate auf 22.05 kHz, Mono (-ac 1) und speichert als WAV
         check=True,                                                 # Löst bei Fehlern eine Exception aus
     )
+    
+    
+def make_pause(pause_path, seconds=PAUSE_S):
+    """Generate a WAV of silence with ffmpeg, in the format of the Piper WAVs."""
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error",                      # Startet FFmpeg im stillen Modus, überschreibt bestehende Dateien (-y)
+         "-f", "lavfi", "-i", "anullsrc=r=22050:cl=mono",           # Erzeugt reine Stille, 22.05 kHz, Mono
+         "-t", str(seconds),                                        # Länge der Stille in Sekunden
+         "-ar", "22050", "-ac", "1", str(pause_path)],              # Gleiches Format wie die Piper-WAVs
+        check=True,                                                 # Löst bei Fehlern eine Exception aus
+    )
 
 
 def postprocess(input_path, output_path, run_id):
@@ -108,15 +120,15 @@ def postprocess(input_path, output_path, run_id):
     run_dir = output_path.parent
     # news_2026-10-26_0800_postprocess.json -> news_2026-10-26_0800.mp3
     mp3_path = run_dir / (output_path.stem.removesuffix("_postprocess") + ".mp3")   # Leitet den finalen MP3-Pfad vom JSON-Dateinamen ab
-    gong_path = run_dir / "audio" / "gong.wav"                                      # Legt den Pfad für die generierte Gong-Datei fest
+    pause_path = run_dir / "audio" / "pause.wav"                                      # Legt den Pfad für die generierte Gong-Datei fest
     list_path = run_dir / "audio" / "concat.txt"                                    # Legt den Pfad für die FFmpeg-Text-Concat-Liste fest
     
     # ffmpeg reads paths in the list with forward slashes on every system.
     wav_paths = [Path(entry["wav"]).resolve().as_posix() for entry in data["items"]]
 
     try:
-        make_gong(gong_path)                                                        # Generiert die Gong-Audiodatei via FFmpeg
-        lines = concat_lines(wav_paths, gong_path.resolve().as_posix())             # Erstellt die Dateiliste inklusive Gongs zwischen den Artikeln
+        make_pause(pause_path)                                                        # Generiert die Gong-Audiodatei via FFmpeg
+        lines = concat_lines(wav_paths, pause_path.resolve().as_posix())             # Erstellt die Dateiliste inklusive Gongs zwischen den Artikeln
         list_path.write_text("\n".join(lines) + "\n", encoding="utf-8")             # Schreibt die Concat-Liste in eine Textdatei
         subprocess.run(
             ["ffmpeg", "-y", "-loglevel", "error",                                  # Startet FFmpeg zum Zusammenfügen, Normalisieren und Kodieren
