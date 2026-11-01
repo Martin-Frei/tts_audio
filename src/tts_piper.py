@@ -55,23 +55,6 @@ logger = logging.getLogger(__name__)
 SENTENCE_PAUSE = 0.4   # seconds of silence between two sentences
 
 
-def speech_text(item):
-    """Join title and teaser into one text for speech.
-
-    The title gets a full stop, so Piper pauses before the teaser.
-
-    >>> speech_text({"title": "Brand in Beispielstadt", "teaser": "Die Feuerwehr ist vor Ort."})
-    'Brand in Beispielstadt. Die Feuerwehr ist vor Ort.'
-    >>> speech_text({"title": "Wann kommt die Reform?", "teaser": None})
-    'Wann kommt die Reform?'
-    """
-    title = item["title"]
-    if not title.endswith((".", "!", "?")):
-        title = title + "."                                 # Wenn title ohne Satzzeichen endet dann .
-    if item.get("teaser"):
-        return title + " " + item["teaser"]                 # reutn title + Leerzeichen+ teaser
-    return title                                            # ohne teaser nur title zurück
-
 
 def write_speech(voice, text, wav_path, pause=SENTENCE_PAUSE):
     """Write one WAV file, with a pause between the sentences."""
@@ -92,7 +75,7 @@ def write_speech(voice, text, wav_path, pause=SENTENCE_PAUSE):
 
 
 def tts_piper(input_path, output_path, run_id, voice_path):
-    """Run the stage tts_piper: one WAV per item, list of files to run.py."""
+    """Run the stage tts_piper: one WAV per segment, list of files to run.py."""
     try:
         data = load_stage(input_path)                                       # Lädt Daten von inputh pfad
         voice = PiperVoice.load(str(voice_path))                            # Lädt Piper Modell
@@ -101,8 +84,13 @@ def tts_piper(input_path, output_path, run_id, voice_path):
         save_stage(output_path, run_id, "tts_piper", [], "abort", reason)   # Speichert Status mit Abbruchgrund
         return "abort", output_path                                         # Gibt Status abort und Pfad zurück
 
-    if not data["items"]:
-        reason = "no items in input"                                        # Erstellt eine Fehlermeldung (keine Artikel)
+    if data["status"] != "ok":                                              # Eingabe nicht freigegeben
+        reason = f"input not released: {Path(input_path).name} has status {data['status']}"  # Grund mit Dateiname und Status
+        save_stage(output_path, run_id, "tts_piper", [], "abort", reason)   # Abbruch speichern
+        return "abort", output_path                                         # Abbruch an run.py melden
+
+    if not data.get("segments"):                                            # keine Segmente in der Eingabe (fehlt oder leer)
+        reason = "no segments in input"                                     # Erstellt eine Fehlermeldung (keine Segmente)
         save_stage(output_path, run_id, "tts_piper", [], "abort", reason)   # Speichert Status mit Abbruchgrund 
         return "abort", output_path                                         # Gibt Status und Ausgabepfad zurück
 
@@ -110,10 +98,11 @@ def tts_piper(input_path, output_path, run_id, voice_path):
     audio_dir.mkdir(parents=True, exist_ok=True)                            # Erstellt Ordner falls nicht da 
 
     entries = []                                                            # Erzeugt leere Liste
-    for item in data["items"]:                                              # Iteriert durch alle items in data
-        wav_path = audio_dir / f"{item['id']}.wav"                          # Erzeugt eien eindeutigen Dateinamen mit der id 
-        write_speech(voice, speech_text(item), wav_path)                    # Erzeugt die Sprachdatei WAV, mit Pause zwischen den Sätzen
-        entries.append({"id": item["id"], "wav": str(wav_path)})            # erzuegt die eie Entries mit id und den wave_path         
+    for segment in data["segments"]:                                        # Iteriert durch alle Segmente in data
+        wav_path = audio_dir / f"{segment['id']}.wav"                       # Erzeugt eien eindeutigen Dateinamen mit der id 
+        write_speech(voice, segment["text"], wav_path)                      # Erzeugt die Sprachdatei WAV, mit Pause zwischen den Sätzen
+        entries.append({"id": segment["id"], "kind": segment["kind"],
+                        "wav": str(wav_path)})                              # Eintrag mit id, Art des Segments und WAV-Pfad
 
     save_stage(output_path, run_id, "tts_piper", entries, "ok")             # Speichert die entries mit Status "ok"
     logger.info("tts_piper: %d WAV files written to %s", len(entries), audio_dir)
