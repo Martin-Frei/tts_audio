@@ -34,7 +34,7 @@ profiles:
       lexicon: config/aussprache_lexikon.json
       voice: voices/de_DE-thorsten-high.onnx
 
-    # Phase 2, step by step: the new chain up to factcheck.
+  # Phase 2, step by step: the new chain up to postprocess.
   # factcheck_apply, normalize and tts follow.
   news_classify:
     project: news
@@ -46,6 +46,11 @@ profiles:
       - script
       - factcheck
       - factcheck_apply
+      - normalize
+      - preprocess_piper
+      - residue_check
+      - tts_piper
+      - postprocess
     params:
       feeds: config/feeds.yaml
       categories: config/categories.json
@@ -66,3 +71,6 @@ profiles:
       lmstudio_url: http://localhost:1234/v1/chat/completions
       factcheck_timeout_ms: 900000
       stop_at_unsupported: 3
+      whitelist: config/rundung_whitelist.json
+      lexicon: config/aussprache_lexikon.json
+      voice: voices/de_DE-thorsten-high.onnx

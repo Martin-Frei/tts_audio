@@ -65,7 +65,8 @@ from tts_piper import tts_piper
 from postprocess import postprocess     
 from script import script     
 from factcheck import factcheck  
-from factcheck_apply import factcheck_apply      
+from factcheck_apply import factcheck_apply  
+from preprocess_piper import preprocess_piper   
 
 logger = logging.getLogger("run")
 
@@ -87,6 +88,7 @@ STAGES = {
     "script": lambda inp, out, run_id, p: script(inp, Path(p["categories"]), Path(p["script_prompt"]), Path(p["script_texts"]), out, run_id, p["model"], p["timeout_ms"], p["attempts"], p["temperature"], p["max_words"]),
     "factcheck": lambda inp, out, run_id, p: factcheck(inp, Path(p["factcheck_prompt"]), out, run_id, p["factcheck_provider"], p["factcheck_model"], p["lmstudio_url"], p["factcheck_timeout_ms"], p["attempts"], p["temperature"], p["stop_at_unsupported"]),   
     "factcheck_apply": lambda inp, out, run_id, p: factcheck_apply(inp, out, run_id),
+    "preprocess_piper": lambda inp, out, run_id, p: preprocess_piper(inp, out, run_id),
 }
 
 # Stages that only check: their file holds findings, not items.
