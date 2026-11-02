@@ -25,6 +25,7 @@ profiles:
     project: testsatz
     stages:
       - normalize
+      - preprocess_piper
       - residue_check
       - tts_piper
       - postprocess
@@ -38,6 +39,7 @@ profiles:
   # factcheck_apply, normalize and tts follow.
   news_classify:
     project: news
+    preload_model: qwen/qwen3.6-35b-a3b
     stages:
       - fetch
       - clean

@@ -4,192 +4,251 @@
   "created": "2026-10-26T00:00:00Z",
   "status": "ok",
   "reason": null,
-  "items": [
+  "sentences": [
     {
-      "id": "t001",
-      "title": "Am 16.10. um 9:15 Uhr berichtete die ARD über den Streik.",
-      "teaser": null,
+      "id": "t001a",
+      "item": "t001",
+      "kind": "content",
+      "text": "Am 16.10. um 9:15 Uhr berichtete die ARD über den Streik.",
       "checks": "Datum mit Endung -ten, Uhrzeit, buchstabiertes Kürzel aus dem Lexikon"
     },
     {
-      "id": "t002",
-      "title": "Der 3.5. ist ein Sonntag.",
-      "teaser": null,
+      "id": "t002a",
+      "item": "t002",
+      "kind": "content",
+      "text": "Der 3.5. ist ein Sonntag.",
       "checks": "Datum nach 'der', Endung -te"
     },
     {
-      "id": "t003",
-      "title": "Die NATO und Dr. Muster trafen sich mit Prof. Beispiel.",
-      "teaser": null,
+      "id": "t003a",
+      "item": "t003",
+      "kind": "content",
+      "text": "Die NATO und Dr. Muster trafen sich mit Prof. Beispiel.",
       "checks": "Kürzel als Wort gesprochen, Abkürzungen mit Punkt"
     },
     {
-      "id": "t004",
-      "title": "Der Marktanteil stieg auf 2,8 %.",
-      "teaser": null,
+      "id": "t004a",
+      "item": "t004",
+      "kind": "content",
+      "text": "Der Marktanteil stieg auf 2,8 %.",
       "checks": "Rundung erlaubt: knapp drei Prozent"
     },
     {
-      "id": "t005",
-      "title": "Das Wachstum lag bei 0,4 %.",
-      "teaser": null,
+      "id": "t005a",
+      "item": "t005",
+      "kind": "content",
+      "text": "Das Wachstum lag bei 0,4 %.",
       "checks": "unter min_abs: nicht runden"
     },
     {
-      "id": "t006",
-      "title": "In der Umfrage kommt die Partei auf 4,6 %.",
-      "teaser": null,
+      "id": "t006a",
+      "item": "t006",
+      "kind": "content",
+      "text": "In der Umfrage kommt die Partei auf 4,6 %.",
       "checks": "Schwellenwert nahe Fünfprozenthürde: nie runden"
     },
     {
-      "id": "t007",
-      "title": "Die Arbeitslosenquote stieg von 6,2 auf 6,3 %.",
-      "teaser": null,
+      "id": "t007a",
+      "item": "t007",
+      "kind": "content",
+      "text": "Die Arbeitslosenquote stieg von 6,2 auf 6,3 %.",
       "checks": "Quote und Vergleich: nie runden"
     },
     {
-      "id": "t008",
-      "title": "Der Dax steht bei 19.450 Punkten.",
-      "teaser": null,
+      "id": "t008a",
+      "item": "t008",
+      "kind": "content",
+      "text": "Der Dax steht bei 19.450 Punkten.",
       "checks": "Tausenderpunkt, Indexstand nie runden"
     },
     {
-      "id": "t009",
-      "title": "Die Tagesmiete beträgt 2,50 €.",
-      "teaser": null,
+      "id": "t009a",
+      "item": "t009",
+      "kind": "content",
+      "text": "Die Tagesmiete beträgt 2,50 €.",
       "checks": "Geldbetrag mit Cent (bekannt offen: Euro und Cent)"
     },
     {
-      "id": "t010",
-      "title": "Die Temperatur fiel auf -0,4 Grad.",
-      "teaser": null,
+      "id": "t010a",
+      "item": "t010",
+      "kind": "content",
+      "text": "Die Temperatur fiel auf -0,4 Grad.",
       "checks": "negativer Messwert mit Einheit, Minus darf nicht verloren gehen"
     },
     {
-      "id": "t011",
-      "title": "Das Treffen beginnt um 1:30 Uhr und endet um 12 Uhr.",
-      "teaser": null,
+      "id": "t011a",
+      "item": "t011",
+      "kind": "content",
+      "text": "Das Treffen beginnt um 1:30 Uhr und endet um 12 Uhr.",
       "checks": "ein Uhr statt eins Uhr, volle Stunde ohne null"
     },
     {
-      "id": "t012",
-      "title": "Es war ihr 55. Geburtstag.",
-      "teaser": null,
+      "id": "t012a",
+      "item": "t012",
+      "kind": "content",
+      "text": "Es war ihr 55. Geburtstag.",
       "checks": "Ordnungszahl im Satz (bekannt offen)"
     },
     {
-      "id": "t013",
-      "title": "Er wurde 55, danach zog er nach Berlin.",
-      "teaser": null,
+      "id": "t013a",
+      "item": "t013",
+      "kind": "content",
+      "text": "Er wurde 55, danach zog er nach Berlin.",
       "checks": "Zahl vor Komma; Satzende nach Zahl liegt im pytest-Test"
     },
     {
-      "id": "t014",
-      "title": "Am 1. Mai wird gefeiert.",
-      "teaser": null,
+      "id": "t014a",
+      "item": "t014",
+      "kind": "content",
+      "text": "Am 1. Mai wird gefeiert.",
       "checks": "Zahl, Punkt, Monatsname (bekannt offen)"
     },
     {
-      "id": "t015",
-      "title": "Im Jahr 1990 wurde die Stadt gegründet.",
-      "teaser": null,
+      "id": "t015a",
+      "item": "t015",
+      "kind": "content",
+      "text": "Im Jahr 1990 wurde die Stadt gegründet.",
       "checks": "Jahreszahl vor 2000 (bekannt offen)"
     },
     {
-      "id": "t016",
-      "title": "Die Studie lief von 2020-2024.",
-      "teaser": null,
+      "id": "t016a",
+      "item": "t016",
+      "kind": "content",
+      "text": "Die Studie lief von 2020-2024.",
       "checks": "Bereich ohne 'bis' (bekannt offen)"
     },
     {
-      "id": "t017",
-      "title": "Muster & Söhne verlegen ihren Sitz.",
-      "teaser": null,
+      "id": "t017a",
+      "item": "t017",
+      "kind": "content",
+      "text": "Muster & Söhne verlegen ihren Sitz.",
       "checks": "Zeichen & als Wort"
     },
     {
-      "id": "t018",
-      "title": "Die Chipaktien und ETFs gaben nach.",
-      "teaser": null,
+      "id": "t018a",
+      "item": "t018",
+      "kind": "content",
+      "text": "Die Chipaktien und ETFs gaben nach.",
       "checks": "Lexikon: Fremdwort, Kürzel im Plural"
     },
     {
-      "id": "t019",
-      "title": "Die COP17 beginnt, der 7er wird vorgestellt.",
-      "teaser": null,
+      "id": "t019a",
+      "item": "t019",
+      "kind": "content",
+      "text": "Die COP17 beginnt, der 7er wird vorgestellt.",
       "checks": "Lexikon: Zahlen an Buchstaben"
     },
     {
-      "id": "t020",
-      "title": "Der G7-Gipfel und das 5G-Netz sind Thema.",
-      "teaser": null,
+      "id": "t020a",
+      "item": "t020",
+      "kind": "content",
+      "text": "Der G7-Gipfel und das 5G-Netz sind Thema.",
       "checks": "Zahlen an Buchstaben ohne Lexikoneintrag: residue_check muss melden"
     },
     {
-      "id": "t021",
-      "title": "Der MDAX und der Dax fielen.",
-      "teaser": null,
+      "id": "t021a",
+      "item": "t021",
+      "kind": "content",
+      "text": "Der MDAX und der Dax fielen.",
       "checks": "Wortgrenze: MDAX ist nicht DAX"
     },
     {
-      "id": "t022",
-      "title": "Papst Leo XIV. besuchte St. Beispiel.",
-      "teaser": null,
+      "id": "t022a",
+      "item": "t022",
+      "kind": "content",
+      "text": "Papst Leo XIV. besuchte St. Beispiel.",
       "checks": "römische Zahl im Namen, St. als Sankt"
     },
     {
-      "id": "t023",
-      "title": "Der Podcast 11KM erklärt die Lage.",
-      "teaser": null,
+      "id": "t023a",
+      "item": "t023",
+      "kind": "content",
+      "text": "Der Podcast 11KM erklärt die Lage.",
       "checks": "Eigenname mit Ziffern im Lexikon"
     },
     {
-      "id": "t024",
-      "title": "Die USA und die EU verhandeln über KI.",
-      "teaser": null,
+      "id": "t024a",
+      "item": "t024",
+      "kind": "content",
+      "text": "Die USA und die EU verhandeln über KI.",
       "checks": "buchstabierte Kürzel"
     },
     {
-      "id": "t025",
-      "title": "Präsident Trump sprach mit Selenskyj in Kiew.",
-      "teaser": null,
+      "id": "t025a",
+      "item": "t025",
+      "kind": "content",
+      "text": "Präsident Trump sprach mit Selenskyj in Kiew.",
       "checks": "ausländische Namen und Orte"
     },
     {
-      "id": "t026",
-      "title": "Der Ölpreis steigt.",
-      "teaser": "Warum? Niemand weiß es genau. Die Lage bleibt unklar.",
+      "id": "t026a",
+      "item": "t026",
+      "kind": "content",
+      "text": "Der Ölpreis steigt.",
       "checks": "Ö am Wortanfang, Pause nach Titel, Fragezeichen, mehrere Sätze im Teaser"
     },
     {
-      "id": "t027",
-      "title": "Neue Regeln für Mieter",
-      "teaser": "Das Gesetz gilt ab Januar – mit Ausnahmen.",
+      "id": "t026b",
+      "item": "t026",
+      "kind": "content",
+      "text": "Warum? Niemand weiß es genau. Die Lage bleibt unklar.",
+      "checks": "Ö am Wortanfang, Pause nach Titel, Fragezeichen, mehrere Sätze im Teaser"
+    },
+    {
+      "id": "t027a",
+      "item": "t027",
+      "kind": "content",
+      "text": "Neue Regeln für Mieter",
       "checks": "Titel ohne Satzzeichen, Gedankenstrich"
     },
     {
-      "id": "t028",
-      "title": "Das Angebot heißt best4you, der Slogan nice2see.",
-      "teaser": null,
+      "id": "t027b",
+      "item": "t027",
+      "kind": "content",
+      "text": "Das Gesetz gilt ab Januar – mit Ausnahmen.",
+      "checks": "Titel ohne Satzzeichen, Gedankenstrich"
+    },
+    {
+      "id": "t028a",
+      "item": "t028",
+      "kind": "content",
+      "text": "Das Angebot heißt best4you, der Slogan nice2see.",
       "checks": "Kunstwort mit Ziffer"
     },
     {
-      "id": "t029",
-      "title": "Die Metzgermeister:innen trafen sich.",
-      "teaser": null,
+      "id": "t029a",
+      "item": "t029",
+      "kind": "content",
+      "text": "Die Metzgermeister:innen trafen sich.",
       "checks": "Gendern mit Doppelpunkt"
     },
     {
-      "id": "t030",
-      "title": "Die Metzgermeister*innen trafen sich.",
-      "teaser": null,
+      "id": "t030a",
+      "item": "t030",
+      "kind": "content",
+      "text": "Die Metzgermeister*innen trafen sich.",
       "checks": "Gendern mit Sternchen"
     },
     {
-      "id": "t031",
-      "title": "Die Metzgermeister_innen und MetzgermeisterInnen trafen sich.",
-      "teaser": null,
+      "id": "t031a",
+      "item": "t031",
+      "kind": "content",
+      "text": "Die Metzgermeister_innen und MetzgermeisterInnen trafen sich.",
       "checks": "Gendern mit Unterstrich und Binnen-I"
+    },
+    {
+      "id": "t032a",
+      "item": "t032",
+      "kind": "content",
+      "text": "Der Ölkonzern BP erwirtschaftete mehr Gewinn.",
+      "checks": "Kürzel BP aus dem Lexikon, Fund residue_check in Lauf 2026-11-02_1001"
+    },
+    {
+      "id": "t033a",
+      "item": "t033",
+      "kind": "content",
+      "text": "Die FIRE-Bewegung setzt auf frühen Ruhestand.",
+      "checks": "Kürzel FIRE aus dem Lexikon, Fund residue_check in Lauf 2026-10-28_1429"
     }
   ]
 }
